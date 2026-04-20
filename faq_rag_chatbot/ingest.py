@@ -1,8 +1,5 @@
 from vectorstore import add_to_index
 from utils import split_text
-
-import pdfplumber
-from PIL import Image
 import pytesseract
 
 def load_file(file):
