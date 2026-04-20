@@ -1,0 +1,141 @@
+[
+  [
+    {
+      "role": "user",
+      "content": "hello"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! How can I assist you today?"
+    },
+    {
+      "role": "user",
+      "content": "привет"
+    },
+    {
+      "role": "assistant",
+      "content": "Привет! Как могу помочь?"
+    },
+    {
+      "role": "user",
+      "content": "solve this",
+      "file": "dsa.txt"
+    },
+    {
+      "role": "user",
+      "content": "solve this",
+      "file": "dsa.txt"
+    },
+    {
+      "role": "assistant",
+      "content": "To solve the problem, let's break down the calculations.\n\nFor the first expression, **2 + 2 + 2 + 3**:\n\n1. 2 + 2 = 4\n2. 4 + 2 = 6\n3. 6 + 3 = 9\n\nSo, **2 + 2 + 2 + 3 = 9**.\n\nFor the second expression, **1 + 1 - 1**:\n\n1. 1 + 1 = 2\n2. 2 - 1 = 1\n\nSo, **1 + 1 - 1 = 1**.\n\nTherefore, the answer is:\n\n**First expression: 9**\n**Second expression: 1**"
+    },
+    {
+      "role": "assistant",
+      "content": "To solve the problem, let's break down the calculations.\n\nFor the first expression, **2 + 2 + 2 + 3**:\n\n1. 2 + 2 = 4\n2. 4 + 2 = 6\n3. 6 + 3 = 9\n\nSo, **2 + 2 + 2 + 3 = 9**.\n\nFor the second expression, **1 + 1 - 1**:\n\n1. 1 + 1 = 2\n2. 2 - 1 = 1\n\nSo, **1 + 1 - 1 = 1**.\n\nTherefore, the answer is:\n\n**First expression: 9**\n**Second expression: 1**"
+    },
+    {
+      "role": "user",
+      "content": "hello",
+      "file": "dsa.txt"
+    },
+    {
+      "role": "user",
+      "content": "hello",
+      "file": "dsa.txt"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! How can I assist you today? If you have any questions or need help with something specific, feel free to ask!"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! How can I assist you today? If you have any questions or need help with something specific, feel free to ask!"
+    },
+    {
+      "role": "user",
+      "content": "solve it",
+      "file": "dsa.txt"
+    },
+    {
+      "role": "user",
+      "content": "solve it",
+      "file": "dsa.txt"
+    },
+    {
+      "role": "assistant",
+      "content": "To solve the equations provided in the file context, we need to calculate the sums.\n\nFor the file context:  \n2 + 2 + 2 + 3 = 9\n\nThis appears three times, but the solution remains the same: 9.\n\nFor the FAQ context:  \n1 + 1 - 1 = 1\n\nThis appears three times as well, and the solution remains the same: 1.\n\nSo the answers are:\n- From file context: 9\n- From FAQ context: 1"
+    },
+    {
+      "role": "assistant",
+      "content": "To solve the equations provided in the file context, we need to calculate the sums.\n\nFor the file context:  \n2 + 2 + 2 + 3 = 9\n\nThis appears three times, but the solution remains the same: 9.\n\nFor the FAQ context:  \n1 + 1 - 1 = 1\n\nThis appears three times as well, and the solution remains the same: 1.\n\nSo the answers are:\n- From file context: 9\n- From FAQ context: 1"
+    }
+  ],
+  [
+    {
+      "role": "user",
+      "content": "как ты"
+    },
+    {
+      "role": "assistant",
+      "content": "Я в порядке, спасибо! Как могу помочь?"
+    }
+  ],
+  [
+    {
+      "role": "user",
+      "content": "how are you"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm good, thank you! How about you?"
+    }
+  ],
+  [
+    {
+      "role": "user",
+      "content": "solve this "
+    },
+    {
+      "role": "assistant",
+      "content": "The solution to 1 + 1 - 1 is 1."
+    },
+    {
+      "role": "user",
+      "content": "good job"
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you! If you have any questions or need assistance, feel free to ask."
+    }
+  ],
+  [
+    {
+      "role": "user",
+      "content": "solve it",
+      "file": "dsa.txt"
+    },
+    {
+      "role": "assistant",
+      "content": "Let's solve the math problems in both the file and FAQ contexts.\n\nFrom the FILE CONTEXT:\nThe expression 2+2+2+3 can be simplified as follows:\n- 2 + 2 = 4\n- 4 + 2 = 6\n- 6 + 3 = 9\n\nSo, 2 + 2 + 2 + 3 = 9.\n\nFrom the FAQ CONTEXT:\nThe expression 1+1-1 can be simplified as follows:\n- 1 + 1 = 2\n- 2 - 1 = 1\n\nSo, 1 + 1 - 1 = 1.\n\nThus, the answers are:\n- For the FILE CONTEXT: 9\n- For the FAQ CONTEXT: 1"
+    },
+    {
+      "role": "user",
+      "content": "hello",
+      "file": null
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! How can I assist you today?"
+    },
+    {
+      "role": "user",
+      "content": "how are you",
+      "file": null
+    },
+    {
+      "role": "assistant",
+      "content": "I'm just a computer program, but I'm here to help you! How can I assist you today?"
+    }
+  ]
+]
