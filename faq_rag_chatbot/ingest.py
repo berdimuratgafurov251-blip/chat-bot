@@ -14,16 +14,6 @@ def load_file(file):
     if filename.endswith(".txt"):
         text = file.read().decode("utf-8")
 
-    # ---------------- PDF ----------------
-    elif filename.endswith(".pdf"):
-        with pdfplumber.open(file) as pdf:
-            for page in pdf.pages:
-                text += page.extract_text() or ""
-
-    # ---------------- IMAGE (OCR) ----------------
-    elif filename.endswith((".png", ".jpg", ".jpeg")):
-        image = Image.open(file)
-        text = pytesseract.image_to_string(image)
 
     else:
         return 0
