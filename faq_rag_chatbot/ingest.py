@@ -1,6 +1,5 @@
 from vectorstore import add_to_index
 from utils import split_text
-import pytesseract
 
 def load_file(file):
     filename = file.name.lower()
