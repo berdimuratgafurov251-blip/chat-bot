@@ -6,7 +6,7 @@ import os
 from chat_store import save_chat, load_chat
 
 # ---------------- OPENAI ----------------
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
