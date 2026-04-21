@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import os
 from google import genai
-
+import numpy as np
 import streamlit as st
 
 # ---------------- GEMINI CLIENT ----------------
@@ -37,12 +37,13 @@ def save_index():
         pickle.dump(texts, f)
 
 # ---------------- EMBEDDING (GEMINI) ----------------
-def get_embedding(text: str):
-    res = client.models.embed_content(
+def get_embedding(text):
+    response = client.models.embed_content(
         model="text-embedding-004",
-        contents=text
+        contents=[text]
     )
-    return np.array(res.embeddings[0].values, dtype=np.float32)
+
+    return np.array(response.embeddings[0].values, dtype=np.float32)
 
 # ---------------- ADD TO INDEX ----------------
 def add_to_index(chunks):
