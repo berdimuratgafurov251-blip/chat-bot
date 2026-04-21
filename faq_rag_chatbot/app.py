@@ -67,6 +67,9 @@ st.title("🤖 Smart FAQ Chatbot (RAG)")
 st.sidebar.title("⚙️ Control Panel")
 
 # 🔐 LOGIN TOGGLE
+if "is_logged_in" not in st.session_state:
+    st.session_state.is_logged_in = False
+
 if st.sidebar.button("🔐 Login / Logout"):
     st.session_state.is_logged_in = not st.session_state.is_logged_in
     st.rerun()
