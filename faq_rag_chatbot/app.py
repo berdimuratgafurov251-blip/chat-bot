@@ -10,20 +10,20 @@ client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
-# ---------------- USER ----------------
+# ---------------- SESSION INIT ----------------
 if "user_id" not in st.session_state:
     st.session_state.user_id = str(uuid.uuid4())
 
 if "is_logged_in" not in st.session_state:
-    st.session_state.is_logged_in = False  # 🔥 guest mode
+    st.session_state.is_logged_in = False
 
-uid = st.session_state.user_id
-
-# ---------------- HISTORY ----------------
 if "history" not in st.session_state:
     st.session_state.history = {}
 
-st.session_state.history.setdefault(uid, [])
+uid = st.session_state.user_id
+
+if uid not in st.session_state.history:
+    st.session_state.history[uid] = []
 
 # ---------------- TEMP FILE ----------------
 if "temp_file_name" not in st.session_state:
@@ -35,47 +35,23 @@ if "temp_file_context" not in st.session_state:
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 
-# ---------------- CSS ----------------
-st.markdown("""
-<style>
-.user-msg {
-    background-color: #000;
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 12px;
-    margin: 5px 0;
-    max-width: 75%;
-    margin-left: auto;
-}
-
-.bot-msg {
-    background-color: #fff;
-    color: #000;
-    padding: 8px 12px;
-    border-radius: 12px;
-    margin: 5px 0;
-    max-width: 75%;
-    margin-right: auto;
-    border: 1px solid #ddd;
-}
-</style>
-""", unsafe_allow_html=True)
-
+# ---------------- UI ----------------
 st.title("🤖 Smart FAQ Chatbot (RAG)")
 
 # ---------------- SIDEBAR ----------------
 st.sidebar.title("⚙️ Control Panel")
 
-# 🔐 LOGIN TOGGLE
-if "is_logged_in" not in st.session_state:
-    st.session_state.is_logged_in = False
+# LOGIN TOGGLE
+label = "🔓 Logout" if st.session_state.is_logged_in else "🔐 Login"
 
-if st.sidebar.button("🔐 Login / Logout"):
+if st.sidebar.button(label):
     st.session_state.is_logged_in = not st.session_state.is_logged_in
     st.rerun()
 
+# CLEAR CHAT (only logged users)
 if st.sidebar.button("🧹 Clear Chat"):
-    st.session_state.history[uid] = []
+    if st.session_state.is_logged_in:
+        st.session_state.history[uid] = []
 
 # ---------------- FILE UPLOAD ----------------
 uploaded_file = st.file_uploader(
@@ -94,18 +70,17 @@ if uploaded_file:
 
     st.success("File uploaded")
 
-# ---------------- CHAT DISPLAY ----------------
-
+# ---------------- CHAT HISTORY ----------------
 if st.session_state.is_logged_in:
     chat_history = st.session_state.history[uid]
 else:
-    chat_history = []  # 🔥 guest ko‘rmaydi
+    chat_history = []
 
 for msg in chat_history:
     if msg["role"] == "user":
-        st.markdown(f"<div class='user-msg'>{msg['content']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background:#000;color:#fff;padding:8px;border-radius:10px;margin:5px'>{msg['content']}</div>", unsafe_allow_html=True)
     else:
-        st.markdown(f"<div class='bot-msg'>{msg['content']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background:#fff;color:#000;padding:8px;border-radius:10px;margin:5px;border:1px solid #ddd'>{msg['content']}</div>", unsafe_allow_html=True)
 
 # ---------------- INPUT ----------------
 query = st.chat_input("Savol yozing...")
@@ -120,7 +95,7 @@ if query:
     st.session_state.temp_file_context = None
     st.session_state.uploader_key += 1
 
-    # ---------------- RAG ----------------
+    # RAG
     docs = search(query)
     rag_context = "\n\n".join(docs) if docs else ""
 
@@ -147,7 +122,7 @@ Answer:
 
     answer = response.text if response.text else "No response"
 
-    # ---------------- SAVE ONLY IF LOGGED IN ----------------
+    # SAVE ONLY IF LOGGED IN
     if st.session_state.is_logged_in:
         st.session_state.history[uid].append({
             "role": "user",
@@ -160,5 +135,8 @@ Answer:
             "content": answer
         })
 
-    # ---------------- SHOW ----------------
-    st.markdown(f"<div class='bot-msg'>{answer}</div>", unsafe_allow_html=True)
+    # SHOW ANSWER
+    st.markdown(
+        f"<div style='background:#eee;color:#000;padding:10px;border-radius:10px'>{answer}</div>",
+        unsafe_allow_html=True
+    )
