@@ -6,7 +6,10 @@ import os
 from chat_store import save_chat, load_chat
 
 # ---------------- GEMINI ----------------
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+client = genai.Client(
+    api_key=st.secrets["GEMINI_API_KEY"],
+    http_options={"api_version": "v1"}
+)
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
