@@ -16,6 +16,48 @@ client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
+# ================= CSS (ORIGINAL STYLE) =================
+st.markdown("""
+<style>
+.user-msg {
+    background-color: #000000;
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 12px;
+    margin: 2px 0;
+    width: fit-content;
+    max-width: 75%;
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.3;
+}
+
+.bot-msg {
+    background-color: #ffffff;
+    color: #000000;
+    padding: 8px 12px;
+    border-radius: 12px;
+    margin: 2px 0;
+    width: fit-content;
+    max-width: 75%;
+    margin-right: auto;
+    border: 1px solid #e0e0e0;
+    line-height: 1.3;
+}
+
+.file-chip {
+    display: block;
+    background-color: #e6e6e6;
+    color: #333;
+    padding: 2px 8px;
+    border-radius: 16px;
+    font-size: 11px;
+    margin-bottom: 4px;
+    width: fit-content;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ---------------- SESSION ----------------
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -36,41 +78,29 @@ def login_page():
 
     tab1, tab2 = st.tabs(["Email", "Google"])
 
-    # -------- EMAIL LOGIN --------
     with tab1:
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
 
         if st.button("Login"):
-            try:
-                res = supabase.auth.sign_in_with_password({
-                    "email": email,
-                    "password": password
-                })
+            res = supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
 
-                st.session_state.user = res.user
-                st.rerun()
-
-            except Exception as e:
-                st.error(str(e))
+            st.session_state.user = res.user
+            st.rerun()
 
         if st.button("Register"):
-            try:
-                res = supabase.auth.sign_up({
-                    "email": email,
-                    "password": password
-                })
-                st.success("Check your email to confirm account!")
+            supabase.auth.sign_up({
+                "email": email,
+                "password": password
+            })
+            st.success("Check email!")
 
-            except Exception as e:
-                st.error(str(e))
-
-    # -------- GOOGLE LOGIN --------
     with tab2:
         if st.button("Login with Google"):
-            supabase.auth.sign_in_with_oauth({
-                "provider": "google"
-            })
+            supabase.auth.sign_in_with_oauth({"provider": "google"})
             st.stop()
 
 
@@ -82,8 +112,6 @@ if st.session_state.user is None:
 user = st.session_state.user
 uid = user.id
 
-
-# ================= UI =================
 st.title("🤖 Smart FAQ Chatbot (RAG)")
 
 st.sidebar.success(f"Logged in: {user.email}")
@@ -97,7 +125,7 @@ if st.sidebar.button("🧹 Clear Chat"):
     supabase.table("chat_history").delete().eq("user_id", uid).execute()
 
 
-# ================= FILE UPLOAD =================
+# ---------------- FILE UPLOAD ----------------
 uploaded_file = st.file_uploader(
     "📎 Upload file",
     type=["txt"],
@@ -115,37 +143,31 @@ if uploaded_file:
     st.success("File uploaded")
 
 
-# ================= LOAD HISTORY =================
+# ---------------- HISTORY ----------------
 def load_history():
-    res = supabase.table("chat_history") \
+    return supabase.table("chat_history") \
         .select("*") \
         .eq("user_id", uid) \
         .order("id") \
-        .execute()
-    return res.data
+        .execute().data
 
 chat_history = load_history()
 
 for msg in chat_history:
     if msg["role"] == "user":
         st.markdown(
-            f"<div style='background:#000;color:#fff;padding:8px;border-radius:10px;margin:5px'>{msg['content']}</div>",
+            f"<div class='user-msg'>{msg['content']}</div>",
             unsafe_allow_html=True
         )
     else:
         st.markdown(
-            f"<div style='background:#fff;color:#000;padding:8px;border-radius:10px;margin:5px;border:1px solid #ddd'>{msg['content']}</div>",
+            f"<div class='bot-msg'>{msg['content']}</div>",
             unsafe_allow_html=True
         )
 
 
-# ================= SAVE MESSAGE =================
+# ---------------- SAVE ----------------
 def save_message(role, content):
-    if not st.session_state.user:
-        return
-
-    uid = st.session_state.user.id
-
     supabase.table("chat_history").insert({
         "user_id": uid,
         "role": role,
@@ -153,7 +175,7 @@ def save_message(role, content):
     }).execute()
 
 
-# ================= CHAT INPUT =================
+# ---------------- CHAT ----------------
 query = st.chat_input("Savol yozing...")
 
 if query:
@@ -161,12 +183,10 @@ if query:
     attached_file = st.session_state.temp_file_name
     attached_context = st.session_state.temp_file_context
 
-    # reset file
     st.session_state.temp_file_name = None
     st.session_state.temp_file_context = None
     st.session_state.uploader_key += 1
 
-    # ---------------- RAG ----------------
     docs = search(query)
     rag_context = "\n\n".join(docs) if docs else ""
 
@@ -193,12 +213,10 @@ Answer:
 
     answer = response.text if response.text else "No response"
 
-    # ---------------- SAVE ----------------
     save_message("user", query)
     save_message("assistant", answer)
 
-    # ---------------- SHOW ----------------
     st.markdown(
-        f"<div style='background:#eee;color:#000;padding:10px;border-radius:10px'>{answer}</div>",
+        f"<div class='bot-msg'>{answer}</div>",
         unsafe_allow_html=True
     )
