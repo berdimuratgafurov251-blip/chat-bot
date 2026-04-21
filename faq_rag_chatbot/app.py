@@ -187,14 +187,15 @@ if query:
     st.session_state.temp_file_context = None
     st.session_state.uploader_key += 1
 
+    # 🔥 FIX 1: LIMIT RAG CONTEXT
     docs = search(query)
-    rag_context = "\n\n".join(docs) if docs else ""
+    rag_context = "\n\n".join(docs[:3]) if docs else ""
 
     prompt = f"""
 You are a helpful assistant.
 
 FILE CONTEXT:
-{attached_context}
+{(attached_context or "")[:1500]}
 
 FAQ CONTEXT:
 {rag_context}
