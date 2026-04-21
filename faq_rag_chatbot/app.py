@@ -13,6 +13,10 @@ client = genai.Client(
     api_key=st.secrets["GEMINI_API_KEY"],
     http_options={"api_version": "v1"}
 )
+models = client.models.list()
+
+for m in models:
+    st.write(m.name)
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
