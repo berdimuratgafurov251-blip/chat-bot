@@ -124,7 +124,11 @@ def login_page():
         if st.button("Login with Google"):
             supabase.auth.sign_in_with_oauth({"provider": "google"})
             st.stop()
-
+# ---------------- LOGOUT ----------------
+if st.sidebar.button("Logout"):
+    supabase.auth.sign_out()
+    st.session_state.user = None
+    st.rerun()
 
 # ---------------- AUTH CHECK ----------------
 if st.session_state.user is None:
@@ -154,11 +158,7 @@ for cid, title in chat_list.items():
     if st.sidebar.button(title):
         st.session_state.chat_id = cid
         st.rerun()
-# ---------------- LOGOUT ----------------
-if st.sidebar.button("Logout"):
-    supabase.auth.sign_out()
-    st.session_state.user = None
-    st.rerun()
+
 
 # ---------------- CLEAR CHAT ----------------
 if st.sidebar.button("🧹 Clear Chat"):
