@@ -7,7 +7,7 @@ from chat_store import save_chat, load_chat
 
 # ---------------- GEMINI ----------------
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-1.5-flash-latest")
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
@@ -194,7 +194,7 @@ Answer:
 """
 
     with st.spinner("Thinking..."):
-       response = model.generate_content("gemini-1.5-flash")
+       response = model.generate_content("gemini-1.5-flash-latest")
 
     answer = response.text if response.text else "No response"
 
