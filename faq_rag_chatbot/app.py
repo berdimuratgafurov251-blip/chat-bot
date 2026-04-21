@@ -210,9 +210,9 @@ Answer:
             contents=[prompt]
 )
 
-print(response.text)
+        print(response.text)
 
-    answer = response.text if response.text else "No response"
+    
 
     # SAVE BOT MESSAGE
     st.session_state.chat.append({
