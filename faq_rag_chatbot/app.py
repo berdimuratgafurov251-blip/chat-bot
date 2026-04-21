@@ -192,10 +192,10 @@ Question:
 Answer:
 """
 
-  with st.spinner("Thinking..."):
+with st.spinner("Thinking..."):
     response = client.models.generate_content(
         model="gemini-1.5-flash",
-        contents=prompt
+        contents=[prompt]
     )
 
     answer = response.text if response.text else "No response"
