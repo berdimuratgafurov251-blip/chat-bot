@@ -10,7 +10,17 @@ client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
+st.write("API TEST START")
 
+try:
+    response = client.models.generate_content(
+        model="gemini-1.5-flash",
+        contents=["hello"]
+    )
+    st.write(response.text)
+
+except Exception as e:
+    st.error(str(e))
 # ================= CSS =================
 st.markdown("""
 <style>
