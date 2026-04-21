@@ -7,4 +7,3 @@ tiktoken
 python-dotenv
 langchain
 google-genai
-google.generativeai
