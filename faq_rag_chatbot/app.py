@@ -194,12 +194,9 @@ Answer:
 """
 
     with st.spinner("Thinking..."):
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
-        )
+       response = model.generate_content(prompt)
 
-    answer = response.choices[0].message.content
+    answer = response.text if response.text else "No response"
 
     # SAVE BOT MESSAGE
     st.session_state.chat.append({
