@@ -1,12 +1,13 @@
 import streamlit as st
 from ingest import load_file
 from vectorstore import search
-from openai import OpenAI
+import google.generativeai as genai
 import os
 from chat_store import save_chat, load_chat
 
-# ---------------- OPENAI ----------------
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# ---------------- GEMINI ----------------
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
