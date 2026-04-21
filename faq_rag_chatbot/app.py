@@ -11,7 +11,6 @@ from google import genai
 
 client = genai.Client(
     api_key=st.secrets["GEMINI_API_KEY"],
-    http_options={"api_version": "v1"}
 )
 models = client.models.list()
 
