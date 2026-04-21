@@ -6,3 +6,4 @@ pandas
 tiktoken
 python-dotenv
 langchain
+google-generativeai
