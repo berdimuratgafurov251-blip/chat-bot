@@ -77,6 +77,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------- SESSION ----------------
+if "chat_id" not in st.session_state:
+    st.session_state.chat_id = None
 if "user" not in st.session_state:
     st.session_state.user = None
 
@@ -137,10 +139,21 @@ st.title("🤖 Smart FAQ Chatbot (RAG)")
 st.sidebar.success(f"Logged in: {user.email}")
 
 # ---------------- NEW CHAT ----------------
+st.sidebar.title("💬 Chats")
+
+# NEW CHAT BUTTON
 if st.sidebar.button("➕ New Chat"):
+    import uuid
     st.session_state.chat_id = str(uuid.uuid4())
     st.rerun()
 
+# CHAT LIST
+chat_list = load_chat_list()
+
+for cid, title in chat_list.items():
+    if st.sidebar.button(title):
+        st.session_state.chat_id = cid
+        st.rerun()
 # ---------------- LOGOUT ----------------
 if st.sidebar.button("Logout"):
     supabase.auth.sign_out()
