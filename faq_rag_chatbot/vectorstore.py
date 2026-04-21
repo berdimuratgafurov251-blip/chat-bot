@@ -8,6 +8,7 @@ import streamlit as st
 
 # ---------------- GEMINI CLIENT ----------------
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+http_options={"api_version": "v1"}
 
 # ---------------- FILE PATHS ----------------
 INDEX_FILE = "faiss_index.bin"
