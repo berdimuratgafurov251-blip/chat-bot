@@ -1,31 +1,68 @@
 import streamlit as st
+from google import genai
 from ingest import load_file
 from vectorstore import search
-from google import genai
-import uuid
+from supabase import create_client
+
+# ---------------- SUPABASE ----------------
+supabase = create_client(
+    st.secrets["SUPABASE_URL"],
+    st.secrets["SUPABASE_KEY"]
+)
 
 # ---------------- GEMINI ----------------
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
-# ---------------- PAGE CONFIG ----------------
+# ---------------- PAGE ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
-# ---------------- SESSION INIT ----------------
-if "user_id" not in st.session_state:
-    st.session_state.user_id = str(uuid.uuid4())
+# ---------------- AUTH SESSION ----------------
+if "user" not in st.session_state:
+    st.session_state.user = None
 
-if "is_logged_in" not in st.session_state:
-    st.session_state.is_logged_in = False
 
-if "history" not in st.session_state:
-    st.session_state.history = {}
+# ================= LOGIN PAGE =================
+def login_page():
+    st.title("🔐 Login")
 
-uid = st.session_state.user_id
+    tab1, tab2 = st.tabs(["Email", "Google"])
 
-if uid not in st.session_state.history:
-    st.session_state.history[uid] = []
+    with tab1:
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
 
-# ---------------- TEMP FILE ----------------
+        if st.button("Login"):
+            try:
+                res = supabase.auth.sign_in_with_password({
+                    "email": email,
+                    "password": password
+                })
+
+                st.session_state.user = res.user
+                st.rerun()
+
+            except Exception as e:
+                st.error(e)
+
+    with tab2:
+        if st.button("Login with Google"):
+            supabase.auth.sign_in_with_oauth({
+                "provider": "google"
+            })
+            st.stop()
+
+
+# ---------------- CHECK AUTH ----------------
+if st.session_state.user is None:
+    login_page()
+    st.stop()
+
+user = st.session_state.user
+uid = user.id
+
+st.title("🤖 Smart FAQ Chatbot (RAG)")
+
+# ---------------- FILE STATE ----------------
 if "temp_file_name" not in st.session_state:
     st.session_state.temp_file_name = None
 
@@ -35,23 +72,37 @@ if "temp_file_context" not in st.session_state:
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 
-# ---------------- UI ----------------
-st.title("🤖 Smart FAQ Chatbot (RAG)")
+
+# ================= DB FUNCTIONS =================
+def save_message(uid, role, content):
+    supabase.table("chat_history").insert({
+        "user_id": uid,
+        "role": role,
+        "content": content
+    }).execute()
+
+
+def load_history(uid):
+    res = supabase.table("chat_history") \
+        .select("*") \
+        .eq("user_id", uid) \
+        .order("id") \
+        .execute()
+    return res.data
+
 
 # ---------------- SIDEBAR ----------------
 st.sidebar.title("⚙️ Control Panel")
 
-# LOGIN TOGGLE
-label = "🔓 Logout" if st.session_state.is_logged_in else "🔐 Login"
+st.sidebar.success(f"Logged in: {user.email}")
 
-if st.sidebar.button(label):
-    st.session_state.is_logged_in = not st.session_state.is_logged_in
+if st.sidebar.button("Logout"):
+    st.session_state.user = None
     st.rerun()
 
-# CLEAR CHAT (only logged users)
 if st.sidebar.button("🧹 Clear Chat"):
-    if st.session_state.is_logged_in:
-        st.session_state.history[uid] = []
+    supabase.table("chat_history").delete().eq("user_id", uid).execute()
+
 
 # ---------------- FILE UPLOAD ----------------
 uploaded_file = st.file_uploader(
@@ -70,17 +121,22 @@ if uploaded_file:
 
     st.success("File uploaded")
 
-# ---------------- CHAT HISTORY ----------------
-if st.session_state.is_logged_in:
-    chat_history = st.session_state.history[uid]
-else:
-    chat_history = []
+
+# ---------------- LOAD CHAT ----------------
+chat_history = load_history(uid)
 
 for msg in chat_history:
     if msg["role"] == "user":
-        st.markdown(f"<div style='background:#000;color:#fff;padding:8px;border-radius:10px;margin:5px'>{msg['content']}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='background:#000;color:#fff;padding:8px;border-radius:10px;margin:5px'>{msg['content']}</div>",
+            unsafe_allow_html=True
+        )
     else:
-        st.markdown(f"<div style='background:#fff;color:#000;padding:8px;border-radius:10px;margin:5px;border:1px solid #ddd'>{msg['content']}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='background:#fff;color:#000;padding:8px;border-radius:10px;margin:5px;border:1px solid #ddd'>{msg['content']}</div>",
+            unsafe_allow_html=True
+        )
+
 
 # ---------------- INPUT ----------------
 query = st.chat_input("Savol yozing...")
@@ -95,7 +151,7 @@ if query:
     st.session_state.temp_file_context = None
     st.session_state.uploader_key += 1
 
-    # RAG
+    # ---------------- RAG ----------------
     docs = search(query)
     rag_context = "\n\n".join(docs) if docs else ""
 
@@ -122,20 +178,11 @@ Answer:
 
     answer = response.text if response.text else "No response"
 
-    # SAVE ONLY IF LOGGED IN
-    if st.session_state.is_logged_in:
-        st.session_state.history[uid].append({
-            "role": "user",
-            "content": query,
-            "file": attached_file
-        })
+    # ---------------- SAVE TO SUPABASE ----------------
+    save_message(uid, "user", query)
+    save_message(uid, "assistant", answer)
 
-        st.session_state.history[uid].append({
-            "role": "assistant",
-            "content": answer
-        })
-
-    # SHOW ANSWER
+    # ---------------- SHOW ----------------
     st.markdown(
         f"<div style='background:#eee;color:#000;padding:10px;border-radius:10px'>{answer}</div>",
         unsafe_allow_html=True
