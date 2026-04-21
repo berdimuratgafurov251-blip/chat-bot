@@ -141,6 +141,11 @@ for msg in chat_history:
 
 # ================= SAVE MESSAGE =================
 def save_message(role, content):
+    if not st.session_state.user:
+        return
+
+    uid = st.session_state.user.id
+
     supabase.table("chat_history").insert({
         "user_id": uid,
         "role": role,
