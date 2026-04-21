@@ -71,8 +71,15 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+if st.sidebar.button("➕ New Chat"):
 
+    st.session_state.temp_file_name = None
+    st.session_state.temp_file_context = None
+
+    st.success("New chat started!")
+    st.rerun()
 # ---------------- SESSION ----------------
+
 if "user" not in st.session_state:
     st.session_state.user = None
 
