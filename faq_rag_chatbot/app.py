@@ -122,8 +122,6 @@ st.sidebar.success(f"Logged in: {user.email}")
 # ---------------- NEW CHAT ----------------
 if st.sidebar.button("➕ New Chat"):
     st.session_state.chat_id = str(uuid.uuid4())
-    st.session_state.temp_file_name = None
-    st.session_state.temp_file_context = None
     st.rerun()
 
 # ---------------- LOGOUT ----------------
@@ -163,7 +161,8 @@ def load_history():
         .select("*") \
         .eq("user_id", uid) \
         .eq("chat_id", st.session_state.chat_id) \
-        .order("id") \
+        .order("created_at") \
+        .execute().data
 
 chat_history = load_history()
 
