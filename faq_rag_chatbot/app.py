@@ -1,13 +1,12 @@
 import streamlit as st
 from ingest import load_file
 from vectorstore import search
-import google.generativeai as genai
+from google import genai
 import os
 from chat_store import save_chat, load_chat
 
 # ---------------- GEMINI ----------------
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
@@ -194,7 +193,10 @@ Answer:
 """
 
     with st.spinner("Thinking..."):
-       response = model.generate_content(prompt)
+       response = client.models.generate_content(
+    model="gemini-1.5-flash",
+    contents=prompt
+)
 
     answer = response.text if response.text else "No response"
 
