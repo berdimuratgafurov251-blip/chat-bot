@@ -6,11 +6,11 @@ import os
 from chat_store import save_chat, load_chat
 
 # ---------------- GEMINI ----------------
-client = genai.Client(
-    api_key=st.secrets["GEMINI_API_KEY"],
-    http_options={"api_version": "v1"}
-)
+import google.generativeai as genai
+import streamlit as st
 
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-1.5-flash")
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 st.write("API TEST START")
