@@ -14,8 +14,19 @@ supabase = create_client(
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 models = client.models.list()
 
-for m in models:
-    print(m.name)
+if st.button("🔄 Load Models"):
+    try:
+        models = client.models.list()
+
+        model_names = [m.name for m in models]
+
+        st.success(f"{len(model_names)} models found")
+
+        for name in model_names:
+            st.code(name)
+
+    except Exception as e:
+        st.error(f"Error: {e}")
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
