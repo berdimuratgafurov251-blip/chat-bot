@@ -17,7 +17,7 @@ st.write("API TEST START")
 
 try:
     response = client.models.generate_content(
-        model="gemini-1.5-flash",
+        model="gemini-1.0-pro",
         contents=["hello"]
     )
     st.write(response.text)
