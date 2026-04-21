@@ -5,6 +5,23 @@ from vectorstore import search
 from supabase import create_client
 import uuid
 
+
+def load_chat_list():
+    res = supabase.table("chat_history") \
+        .select("chat_id, content, created_at") \
+        .eq("user_id", uid) \
+        .order("created_at", desc=True) \
+        .execute()
+
+    data = res.data
+
+    chats = {}
+    for row in data:
+        cid = row["chat_id"]
+        if cid and cid not in chats:
+            chats[cid] = row["content"][:30]  # title
+
+    return chats
 # ---------------- SUPABASE ----------------
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
