@@ -264,6 +264,7 @@ Answer:
     answer = response.text if response.text else "No response"
 
     save_message("user", query)
+    st.rerun()
     save_message("assistant", answer)
     st.rerun()
     st.markdown(
