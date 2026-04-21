@@ -265,7 +265,7 @@ Answer:
 
     save_message("user", query)
     save_message("assistant", answer)
-
+    st.rerun()
     st.markdown(
         f"<div class='bot-msg'>{answer}</div>",
         unsafe_allow_html=True
