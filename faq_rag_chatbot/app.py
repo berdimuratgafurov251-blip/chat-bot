@@ -15,8 +15,9 @@ client = genai.Client(
 )
 models = client.models.list()
 
-for m in models:
-    st.write(m.name)
+for m in client.models.list():
+    if 'embedContent' in m.supported_methods:
+        print(m.name)
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
