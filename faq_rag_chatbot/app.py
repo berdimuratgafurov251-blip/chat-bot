@@ -203,7 +203,7 @@ Answer:
             contents=[prompt]
 )
 
-        print(response.text)
+        answer = response.text if response.text else "No response"
 
     
 
