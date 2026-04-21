@@ -123,12 +123,7 @@ def login_page():
     with tab2:
         if st.button("Login with Google"):
             supabase.auth.sign_in_with_oauth({"provider": "google"})
-            st.stop()
-# ---------------- LOGOUT ----------------
-if st.sidebar.button("Logout"):
-    supabase.auth.sign_out()
-    st.session_state.user = None
-    st.rerun()
+
 
 # ---------------- AUTH CHECK ----------------
 if st.session_state.user is None:
@@ -141,7 +136,12 @@ uid = user.id
 st.title("🤖 Smart FAQ Chatbot (RAG)")
 
 st.sidebar.success(f"Logged in: {user.email}")
-
+            st.stop()
+# ---------------- LOGOUT ----------------
+if st.sidebar.button("Logout"):
+    supabase.auth.sign_out()
+    st.session_state.user = None
+    st.rerun()
 # ---------------- NEW CHAT ----------------
 st.sidebar.title("💬 Chats")
 
