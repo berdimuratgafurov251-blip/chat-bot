@@ -107,7 +107,7 @@ if st.sidebar.button("🧹 Clear Chat"):
 # ================= FILE UPLOADER =================
 uploaded_file = st.file_uploader(
     "📎 Upload your file",
-    type=["txt", "pdf", "png", "jpg", "jpeg"],
+    type=["txt"],
     key=st.session_state.uploader_key
 )
 
@@ -119,7 +119,7 @@ if uploaded_file:
         st.session_state.temp_file_context = "\n\n".join(docs) if docs else ""
         st.session_state.temp_file_name = uploaded_file.name
 
-    st.success(f"{uploaded_file.name} ready for next message")
+    st.success(f"{uploaded_file.name} Uploaded")
 
 # ================= CHAT DISPLAY =================
 for msg in st.session_state.chat:
