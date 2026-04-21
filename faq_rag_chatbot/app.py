@@ -106,7 +106,7 @@ if st.sidebar.button("🧹 Clear Chat"):
 
 # ================= FILE UPLOADER =================
 uploaded_file = st.file_uploader(
-    "📎 Attach file (only for next message)",
+    "📎 Upload your file",
     type=["txt", "pdf", "png", "jpg", "jpeg"],
     key=st.session_state.uploader_key
 )
