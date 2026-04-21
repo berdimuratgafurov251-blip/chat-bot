@@ -1,30 +1,24 @@
 import faiss
 import numpy as np
-from openai import OpenAI
-import os
 import pickle
-from dotenv import load_dotenv
+import os
+from google import genai
 
-# ---------------- ENV ----------------
-load_dotenv()
+import streamlit as st
 
-api_key = os.getenv("OPENAI_API_KEY")
-
-if not api_key:
-    raise ValueError("❌ GEMINI_API_KEY topilmadi!")
-
-client = OpenAI(api_key=api_key)
+# ---------------- GEMINI CLIENT ----------------
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # ---------------- FILE PATHS ----------------
 INDEX_FILE = "faiss_index.bin"
 TEXT_FILE = "texts.pkl"
 
 # ---------------- INIT ----------------
-dimension = 1536
+dimension = 768  # Gemini embedding size
 index = faiss.IndexFlatL2(dimension)
 texts = []
 
-# ---------------- LOAD EXISTING DATA ----------------
+# ---------------- LOAD ----------------
 def load_index():
     global index, texts
 
@@ -42,24 +36,25 @@ def save_index():
     with open(TEXT_FILE, "wb") as f:
         pickle.dump(texts, f)
 
-# ---------------- EMBEDDING ----------------
-def get_embedding(text):
-    res = client.embeddings.create(
-        model="text-embedding-3-small",
-        input=text
+# ---------------- EMBEDDING (GEMINI) ----------------
+def get_embedding(text: str):
+    res = client.models.embed_content(
+        model="text-embedding-004",
+        contents=text
     )
-    return np.array(res.data[0].embedding, dtype=np.float32)
+    return np.array(res.embeddings[0].values, dtype=np.float32)
 
-# ---------------- ADD DATA ----------------
+# ---------------- ADD TO INDEX ----------------
 def add_to_index(chunks):
     global texts
 
     for chunk in chunks:
         emb = get_embedding(chunk)
+
         index.add(np.array([emb]))
         texts.append(chunk)
 
-    save_index()  # 🔥 HAR SAFAR SAQLANADI
+    save_index()
 
 # ---------------- SEARCH ----------------
 def search(query, k=3):
@@ -67,9 +62,10 @@ def search(query, k=3):
         return []
 
     q_emb = get_embedding(query)
+
     D, I = index.search(np.array([q_emb]), k)
 
     return [texts[i] for i in I[0] if i < len(texts)]
 
-# ---------------- LOAD ON START ----------------
+# ---------------- INIT LOAD ----------------
 load_index()
