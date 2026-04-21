@@ -5,23 +5,6 @@ from vectorstore import search
 from supabase import create_client
 import uuid
 
-
-def load_chat_list():
-    res = supabase.table("chat_history") \
-        .select("chat_id, content, created_at") \
-        .eq("user_id", uid) \
-        .order("created_at", desc=True) \
-        .execute()
-
-    data = res.data
-
-    chats = {}
-    for row in data:
-        cid = row["chat_id"]
-        if cid and cid not in chats:
-            chats[cid] = row["content"][:30]  # title
-
-    return chats
 # ---------------- SUPABASE ----------------
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
@@ -77,12 +60,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------- SESSION ----------------
-if "chat_id" not in st.session_state:
-    st.session_state.chat_id = None
 if "user" not in st.session_state:
     st.session_state.user = None
 
-if "chat_id" not in st.session_state:
+if "chat_id" not in st.session_state or st.session_state.chat_id is None:
     st.session_state.chat_id = str(uuid.uuid4())
 
 if "temp_file_name" not in st.session_state:
@@ -93,6 +74,7 @@ if "temp_file_context" not in st.session_state:
 
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
+
 
 # ================= LOGIN =================
 def login_page():
@@ -109,7 +91,6 @@ def login_page():
                 "email": email,
                 "password": password
             })
-
             st.session_state.user = res.user
             st.rerun()
 
@@ -123,11 +104,17 @@ def login_page():
     with tab2:
         if st.button("Login with Google"):
             supabase.auth.sign_in_with_oauth({"provider": "google"})
+            st.stop()
+
+
 # ---------------- LOGOUT ----------------
-if st.sidebar.button("Logout"):
-    supabase.auth.sign_out()
-    st.session_state.user = None
-    st.rerun()
+if st.session_state.user:
+    st.sidebar.success(f"Logged in: {st.session_state.user.email}")
+
+    if st.sidebar.button("Logout"):
+        supabase.auth.sign_out()
+        st.session_state.user = None
+        st.rerun()
 
 # ---------------- AUTH CHECK ----------------
 if st.session_state.user is None:
@@ -139,22 +126,39 @@ uid = user.id
 
 st.title("🤖 Smart FAQ Chatbot (RAG)")
 
-st.sidebar.success(f"Logged in: {user.email}")
 
 # ---------------- NEW CHAT ----------------
 st.sidebar.title("💬 Chats")
 
-# NEW CHAT BUTTON
 if st.sidebar.button("➕ New Chat"):
-    import uuid
     st.session_state.chat_id = str(uuid.uuid4())
     st.rerun()
 
-# CHAT LIST
+
+# ---------------- LOAD CHAT LIST ----------------
+def load_chat_list():
+    res = supabase.table("chat_history") \
+        .select("chat_id, content, created_at") \
+        .eq("user_id", uid) \
+        .order("created_at", desc=True) \
+        .execute()
+
+    data = res.data
+
+    chats = {}
+    for row in data:
+        cid = row["chat_id"]
+        if cid and cid not in chats:
+            chats[cid] = row["content"][:30]
+
+    return chats
+
+
 chat_list = load_chat_list()
 
+# ---------------- FIX: UNIQUE KEY ERROR ----------------
 for cid, title in chat_list.items():
-    if st.sidebar.button(title):
+    if st.sidebar.button(title, key=f"chat_{cid}"):
         st.session_state.chat_id = cid
         st.rerun()
 
@@ -166,6 +170,7 @@ if st.sidebar.button("🧹 Clear Chat"):
         .eq("user_id", uid) \
         .eq("chat_id", st.session_state.chat_id) \
         .execute()
+
 
 # ---------------- FILE UPLOAD ----------------
 uploaded_file = st.file_uploader(
@@ -184,6 +189,7 @@ if uploaded_file:
 
     st.success("File uploaded")
 
+
 # ---------------- HISTORY ----------------
 def load_history():
     return supabase.table("chat_history") \
@@ -192,6 +198,7 @@ def load_history():
         .eq("chat_id", st.session_state.chat_id) \
         .order("created_at") \
         .execute().data
+
 
 chat_history = load_history()
 
@@ -207,6 +214,7 @@ for msg in chat_history:
             unsafe_allow_html=True
         )
 
+
 # ---------------- SAVE MESSAGE ----------------
 def save_message(role, content):
     supabase.table("chat_history").insert({
@@ -216,22 +224,6 @@ def save_message(role, content):
         "content": content
     }).execute()
 
-# ---------------- LIMIT (FIFO 10) ----------------
-def enforce_limit():
-    data = supabase.table("chat_history") \
-        .select("id") \
-        .eq("user_id", uid) \
-        .eq("chat_id", st.session_state.chat_id) \
-        .order("id") \
-        .execute().data
-
-    if len(data) > 10:
-        oldest = data[0]["id"]
-
-        supabase.table("chat_history") \
-            .delete() \
-            .eq("id", oldest) \
-            .execute()
 
 # ---------------- CHAT ----------------
 query = st.chat_input("Savol yozing...")
@@ -273,8 +265,6 @@ Answer:
 
     save_message("user", query)
     save_message("assistant", answer)
-
-    enforce_limit()
 
     st.markdown(
         f"<div class='bot-msg'>{answer}</div>",
