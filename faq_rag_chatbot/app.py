@@ -12,7 +12,10 @@ supabase = create_client(
 
 # ---------------- GEMINI ----------------
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+models = client.models.list()
 
+for m in models:
+    print(m.name)
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
