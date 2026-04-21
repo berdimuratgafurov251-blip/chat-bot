@@ -39,7 +39,7 @@ def save_index():
 # ---------------- EMBEDDING (GEMINI) ----------------
 def get_embedding(text):
     response = client.models.embed_content(
-        model="text-embedding-004",
+        model="gemini-2.5-flash",
         contents=[text]
     )
 
