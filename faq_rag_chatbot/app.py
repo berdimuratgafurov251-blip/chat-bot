@@ -15,9 +15,11 @@ client = genai.Client(
 )
 models = client.models.list()
 
+# Qaysi modellar embeddingni qo'llashini ko'rish uchun:
 for m in client.models.list():
-    if 'embedContent' in m.supported_methods:
-        print(m.name)
+    # Yangi SDK'da m.supported_methods o'rniga m.capabilities bo'lishi mumkin
+    # yoki shunchaki model nomini chop etib tekshiramiz
+    print(f"Model nomi: {m.name}")
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
