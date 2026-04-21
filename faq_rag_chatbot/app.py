@@ -14,9 +14,6 @@ client = genai.Client(
 )
 models = client.models.list()
 
-# Qaysi modellar embeddingni qo'llashini ko'rish uchun:
-for m in models:
-    st.write(m.name)
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
