@@ -13,20 +13,30 @@ supabase = create_client(
 # ---------------- GEMINI ----------------
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
-# ---------------- PAGE ----------------
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
-# ---------------- AUTH SESSION ----------------
+# ---------------- SESSION ----------------
 if "user" not in st.session_state:
     st.session_state.user = None
 
+if "temp_file_name" not in st.session_state:
+    st.session_state.temp_file_name = None
 
-# ================= LOGIN PAGE =================
+if "temp_file_context" not in st.session_state:
+    st.session_state.temp_file_context = None
+
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
+
+
+# ================= LOGIN =================
 def login_page():
     st.title("🔐 Login")
 
     tab1, tab2 = st.tabs(["Email", "Google"])
 
+    # -------- EMAIL LOGIN --------
     with tab1:
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
@@ -42,8 +52,20 @@ def login_page():
                 st.rerun()
 
             except Exception as e:
-                st.error(e)
+                st.error(str(e))
 
+        if st.button("Register"):
+            try:
+                res = supabase.auth.sign_up({
+                    "email": email,
+                    "password": password
+                })
+                st.success("Check your email to confirm account!")
+
+            except Exception as e:
+                st.error(str(e))
+
+    # -------- GOOGLE LOGIN --------
     with tab2:
         if st.button("Login with Google"):
             supabase.auth.sign_in_with_oauth({
@@ -52,7 +74,7 @@ def login_page():
             st.stop()
 
 
-# ---------------- CHECK AUTH ----------------
+# ---------------- AUTH CHECK ----------------
 if st.session_state.user is None:
     login_page()
     st.stop()
@@ -60,43 +82,14 @@ if st.session_state.user is None:
 user = st.session_state.user
 uid = user.id
 
+
+# ================= UI =================
 st.title("🤖 Smart FAQ Chatbot (RAG)")
-
-# ---------------- FILE STATE ----------------
-if "temp_file_name" not in st.session_state:
-    st.session_state.temp_file_name = None
-
-if "temp_file_context" not in st.session_state:
-    st.session_state.temp_file_context = None
-
-if "uploader_key" not in st.session_state:
-    st.session_state.uploader_key = 0
-
-
-# ================= DB FUNCTIONS =================
-def save_message(uid, role, content):
-    supabase.table("chat_history").insert({
-        "user_id": uid,
-        "role": role,
-        "content": content
-    }).execute()
-
-
-def load_history(uid):
-    res = supabase.table("chat_history") \
-        .select("*") \
-        .eq("user_id", uid) \
-        .order("id") \
-        .execute()
-    return res.data
-
-
-# ---------------- SIDEBAR ----------------
-st.sidebar.title("⚙️ Control Panel")
 
 st.sidebar.success(f"Logged in: {user.email}")
 
 if st.sidebar.button("Logout"):
+    supabase.auth.sign_out()
     st.session_state.user = None
     st.rerun()
 
@@ -104,7 +97,7 @@ if st.sidebar.button("🧹 Clear Chat"):
     supabase.table("chat_history").delete().eq("user_id", uid).execute()
 
 
-# ---------------- FILE UPLOAD ----------------
+# ================= FILE UPLOAD =================
 uploaded_file = st.file_uploader(
     "📎 Upload file",
     type=["txt"],
@@ -122,8 +115,16 @@ if uploaded_file:
     st.success("File uploaded")
 
 
-# ---------------- LOAD CHAT ----------------
-chat_history = load_history(uid)
+# ================= LOAD HISTORY =================
+def load_history():
+    res = supabase.table("chat_history") \
+        .select("*") \
+        .eq("user_id", uid) \
+        .order("id") \
+        .execute()
+    return res.data
+
+chat_history = load_history()
 
 for msg in chat_history:
     if msg["role"] == "user":
@@ -138,7 +139,16 @@ for msg in chat_history:
         )
 
 
-# ---------------- INPUT ----------------
+# ================= SAVE MESSAGE =================
+def save_message(role, content):
+    supabase.table("chat_history").insert({
+        "user_id": uid,
+        "role": role,
+        "content": content
+    }).execute()
+
+
+# ================= CHAT INPUT =================
 query = st.chat_input("Savol yozing...")
 
 if query:
@@ -178,9 +188,9 @@ Answer:
 
     answer = response.text if response.text else "No response"
 
-    # ---------------- SAVE TO SUPABASE ----------------
-    save_message(uid, "user", query)
-    save_message(uid, "assistant", answer)
+    # ---------------- SAVE ----------------
+    save_message("user", query)
+    save_message("assistant", answer)
 
     # ---------------- SHOW ----------------
     st.markdown(
