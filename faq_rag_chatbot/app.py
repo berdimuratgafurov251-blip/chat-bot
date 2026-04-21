@@ -140,7 +140,7 @@ uid = user.id
 st.title("🤖 Smart FAQ Chatbot (RAG)")
 
 st.sidebar.success(f"Logged in: {user.email}")
-st.stop()
+                st.stop()
 
 # ---------------- NEW CHAT ----------------
 st.sidebar.title("💬 Chats")
