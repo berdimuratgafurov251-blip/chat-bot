@@ -164,7 +164,6 @@ def load_history():
         .eq("user_id", uid) \
         .eq("chat_id", st.session_state.chat_id) \
         .order("id") \
-        .execute().data
 
 chat_history = load_history()
 
