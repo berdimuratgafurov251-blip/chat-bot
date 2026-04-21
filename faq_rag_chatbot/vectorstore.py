@@ -8,7 +8,6 @@ import streamlit as st
 
 # ---------------- GEMINI CLIENT ----------------
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-http_options={"api_version": "v1"}
 
 # ---------------- FILE PATHS ----------------
 INDEX_FILE = "faiss_index.bin"
@@ -40,7 +39,7 @@ def save_index():
 # ---------------- EMBEDDING (GEMINI) ----------------
 def get_embedding(text):
     response = client.models.embed_content(
-        model="models/text-embedding-001",
+        model="models/gemini-embedding-001",
         contents=[text]
     )
 
