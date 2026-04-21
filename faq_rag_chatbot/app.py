@@ -3,6 +3,7 @@ from google import genai
 from ingest import load_file
 from vectorstore import search
 from supabase import create_client
+import uuid
 
 # ---------------- SUPABASE ----------------
 supabase = create_client(
@@ -12,25 +13,11 @@ supabase = create_client(
 
 # ---------------- GEMINI ----------------
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-models = client.models.list()
 
-if st.button("🔄 Load Models"):
-    try:
-        models = client.models.list()
-
-        model_names = [m.name for m in models]
-
-        st.success(f"{len(model_names)} models found")
-
-        for name in model_names:
-            st.code(name)
-
-    except Exception as e:
-        st.error(f"Error: {e}")
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
-# ================= CSS (ORIGINAL STYLE) =================
+# ================= CSS (UNCHANGED) =================
 st.markdown("""
 <style>
 .user-msg {
@@ -71,17 +58,13 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
-if st.sidebar.button("➕ New Chat"):
 
-    st.session_state.temp_file_name = None
-    st.session_state.temp_file_context = None
-
-    st.success("New chat started!")
-    st.rerun()
 # ---------------- SESSION ----------------
-
 if "user" not in st.session_state:
     st.session_state.user = None
+
+if "chat_id" not in st.session_state:
+    st.session_state.chat_id = str(uuid.uuid4())
 
 if "temp_file_name" not in st.session_state:
     st.session_state.temp_file_name = None
@@ -91,7 +74,6 @@ if "temp_file_context" not in st.session_state:
 
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
-
 
 # ================= LOGIN =================
 def login_page():
@@ -137,14 +119,26 @@ st.title("🤖 Smart FAQ Chatbot (RAG)")
 
 st.sidebar.success(f"Logged in: {user.email}")
 
+# ---------------- NEW CHAT ----------------
+if st.sidebar.button("➕ New Chat"):
+    st.session_state.chat_id = str(uuid.uuid4())
+    st.session_state.temp_file_name = None
+    st.session_state.temp_file_context = None
+    st.rerun()
+
+# ---------------- LOGOUT ----------------
 if st.sidebar.button("Logout"):
     supabase.auth.sign_out()
     st.session_state.user = None
     st.rerun()
 
+# ---------------- CLEAR CHAT ----------------
 if st.sidebar.button("🧹 Clear Chat"):
-    supabase.table("chat_history").delete().eq("user_id", uid).execute()
-
+    supabase.table("chat_history") \
+        .delete() \
+        .eq("user_id", uid) \
+        .eq("chat_id", st.session_state.chat_id) \
+        .execute()
 
 # ---------------- FILE UPLOAD ----------------
 uploaded_file = st.file_uploader(
@@ -163,12 +157,12 @@ if uploaded_file:
 
     st.success("File uploaded")
 
-
 # ---------------- HISTORY ----------------
 def load_history():
     return supabase.table("chat_history") \
         .select("*") \
         .eq("user_id", uid) \
+        .eq("chat_id", st.session_state.chat_id) \
         .order("id") \
         .execute().data
 
@@ -186,15 +180,31 @@ for msg in chat_history:
             unsafe_allow_html=True
         )
 
-
-# ---------------- SAVE ----------------
+# ---------------- SAVE MESSAGE ----------------
 def save_message(role, content):
     supabase.table("chat_history").insert({
         "user_id": uid,
+        "chat_id": st.session_state.chat_id,
         "role": role,
         "content": content
     }).execute()
 
+# ---------------- LIMIT (FIFO 10) ----------------
+def enforce_limit():
+    data = supabase.table("chat_history") \
+        .select("id") \
+        .eq("user_id", uid) \
+        .eq("chat_id", st.session_state.chat_id) \
+        .order("id") \
+        .execute().data
+
+    if len(data) > 10:
+        oldest = data[0]["id"]
+
+        supabase.table("chat_history") \
+            .delete() \
+            .eq("id", oldest) \
+            .execute()
 
 # ---------------- CHAT ----------------
 query = st.chat_input("Savol yozing...")
@@ -208,7 +218,6 @@ if query:
     st.session_state.temp_file_context = None
     st.session_state.uploader_key += 1
 
-    # 🔥 FIX 1: LIMIT RAG CONTEXT
     docs = search(query)
     rag_context = "\n\n".join(docs[:3]) if docs else ""
 
@@ -237,6 +246,8 @@ Answer:
 
     save_message("user", query)
     save_message("assistant", answer)
+
+    enforce_limit()
 
     st.markdown(
         f"<div class='bot-msg'>{answer}</div>",
