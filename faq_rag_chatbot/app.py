@@ -6,11 +6,10 @@ import os
 from chat_store import save_chat, load_chat
 
 # ---------------- GEMINI ----------------
-import google.generativeai as genai
 import streamlit as st
+from google import genai
 
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 st.write("API TEST START")
@@ -207,9 +206,11 @@ Answer:
 
     with st.spinner("Thinking..."):
         response = client.models.generate_content(
-            model="gemini-1.0-pro",
-            contents=["hello"]
-        )
+            model="gemini-1.5-flash",
+            contents=[prompt]
+)
+
+print(response.text)
 
     answer = response.text if response.text else "No response"
 
