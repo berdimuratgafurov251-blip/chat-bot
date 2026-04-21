@@ -194,7 +194,7 @@ Answer:
 """
 
     with st.spinner("Thinking..."):
-       response = model.generate_content("gemini-1.5")
+       response = model.generate_content("gemini-1.5-flash")
 
     answer = response.text if response.text else "No response"
 
