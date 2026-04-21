@@ -4,9 +4,7 @@ from vectorstore import search
 from google import genai
 import os
 from chat_store import save_chat, load_chat
-models = client.models.list()
-for m in models:
-    st.write(m.name)
+
 # ---------------- GEMINI ----------------
 import streamlit as st
 from google import genai
@@ -28,6 +26,11 @@ try:
 
 except Exception as e:
     st.error(str(e))
+
+
+models = client.models.list()
+for m in models:
+    st.write(m.name)
 # ================= CSS =================
 st.markdown("""
 <style>
