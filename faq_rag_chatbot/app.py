@@ -14,44 +14,40 @@ supabase = create_client(
 # ---------------- GEMINI ----------------
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
-# ---------------- PAGE CONFIG ----------------
+# ---------------- PAGE ----------------
 st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
 
-# ================= CSS (UNCHANGED) =================
+# ================= CSS =================
 st.markdown("""
 <style>
 .user-msg {
-    background-color: #000000;
-    color: #ffffff;
+    background-color: #000;
+    color: #fff;
     padding: 8px 12px;
     border-radius: 12px;
     margin: 2px 0;
     width: fit-content;
     max-width: 75%;
     margin-left: auto;
-    text-align: right;
-    line-height: 1.3;
 }
 
 .bot-msg {
-    background-color: #ffffff;
-    color: #000000;
+    background-color: #fff;
+    color: #000;
     padding: 8px 12px;
     border-radius: 12px;
     margin: 2px 0;
     width: fit-content;
     max-width: 75%;
     margin-right: auto;
-    border: 1px solid #e0e0e0;
-    line-height: 1.3;
+    border: 1px solid #ddd;
 }
 
 .file-chip {
     display: block;
-    background-color: #e6e6e6;
-    color: #333;
+    background: #eee;
     padding: 2px 8px;
-    border-radius: 16px;
+    border-radius: 12px;
     font-size: 11px;
     margin-bottom: 4px;
     width: fit-content;
@@ -59,12 +55,15 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- SESSION ----------------
+# ================= SESSION =================
 if "user" not in st.session_state:
     st.session_state.user = None
 
-if "chat_id" not in st.session_state or st.session_state.chat_id is None:
+if "chat_id" not in st.session_state:
     st.session_state.chat_id = str(uuid.uuid4())
+
+if "guest_chat" not in st.session_state:
+    st.session_state.guest_chat = []
 
 if "temp_file_name" not in st.session_state:
     st.session_state.temp_file_name = None
@@ -76,121 +75,105 @@ if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 
 
-# ================= LOGIN =================
+# ================= LOGIN PAGE =================
 def login_page():
     st.title("🔐 Login")
 
-    tab1, tab2 = st.tabs(["Email", "Google"])
+    email = st.text_input("Email")
+    password = st.text_input("Password", type="password")
 
-    with tab1:
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        res = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+        st.session_state.user = res.user
+        st.rerun()
 
-        if st.button("Login"):
-            res = supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-            st.session_state.user = res.user
-            st.rerun()
-
-        if st.button("Register"):
-            supabase.auth.sign_up({
-                "email": email,
-                "password": password
-            })
-            st.success("Check email!")
-
-    with tab2:
-        if st.button("Login with Google"):
-            supabase.auth.sign_in_with_oauth({"provider": "google"})
-            st.stop()
+    if st.button("Register"):
+        supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+        st.success("Check your email!")
 
 
-# ---------------- LOGOUT ----------------
+# ================= AUTH =================
+st.sidebar.title("👤 Account")
+
 if st.session_state.user:
-    st.sidebar.success(f"Logged in: {st.session_state.user.email}")
+    st.sidebar.success(f"{st.session_state.user.email}")
 
     if st.sidebar.button("Logout"):
         supabase.auth.sign_out()
         st.session_state.user = None
         st.rerun()
+else:
+    if st.sidebar.button("🔐 Login / Register"):
+        login_page()
+        st.stop()
 
-# ---------------- AUTH CHECK ----------------
-if st.session_state.user is None:
-    login_page()
-    st.stop()
+# USER MODE
+is_logged_in = st.session_state.user is not None
+uid = st.session_state.user.id if is_logged_in else "guest"
 
-user = st.session_state.user
-uid = user.id
+# ================= SIDEBAR =================
+if is_logged_in:
+    st.sidebar.title("💬 Chats")
 
-st.title("🤖 Smart FAQ Chatbot (RAG)")
-
-
-# ---------------- NEW CHAT ----------------
-st.sidebar.title("💬 Chats")
-
-if st.sidebar.button("➕ New Chat"):
-    st.session_state.chat_id = str(uuid.uuid4())
-    st.rerun()
-
-
-# ---------------- LOAD CHAT LIST ----------------
-def load_chat_list():
-    res = supabase.table("chat_history") \
-        .select("chat_id, content, created_at") \
-        .eq("user_id", uid) \
-        .order("created_at", desc=True) \
-        .execute()
-
-    data = res.data
-
-    chats = {}
-    for row in data:
-        cid = row["chat_id"]
-        if cid and cid not in chats:
-            chats[cid] = row["content"][:30]
-
-    return chats
-
-
-chat_list = load_chat_list()
-
-# ---------------- FIX: UNIQUE KEY ERROR ----------------
-for cid, title in chat_list.items():
-    if st.sidebar.button(title, key=f"chat_{cid}"):
-        st.session_state.chat_id = cid
+    if st.sidebar.button("➕ New Chat"):
+        st.session_state.chat_id = str(uuid.uuid4())
         st.rerun()
 
+    def load_chat_list():
+        res = supabase.table("chat_history") \
+            .select("chat_id, content, created_at") \
+            .eq("user_id", uid) \
+            .order("created_at", desc=True) \
+            .execute()
 
-# ---------------- CLEAR CHAT ----------------
-if st.sidebar.button("🧹 Clear Chat"):
-    supabase.table("chat_history") \
-        .delete() \
-        .eq("user_id", uid) \
-        .eq("chat_id", st.session_state.chat_id) \
-        .execute()
+        chats = {}
+        for row in res.data:
+            cid = row["chat_id"]
+            if cid not in chats:
+                chats[cid] = row["content"][:30]
 
+        return chats
 
-# ---------------- FILE UPLOAD ----------------
+    chat_list = load_chat_list()
+
+    for cid, title in chat_list.items():
+        if st.sidebar.button(title, key=cid):
+            st.session_state.chat_id = cid
+            st.rerun()
+
+    if st.sidebar.button("🧹 Clear Chat"):
+        supabase.table("chat_history") \
+            .delete() \
+            .eq("user_id", uid) \
+            .eq("chat_id", st.session_state.chat_id) \
+            .execute()
+
+else:
+    st.sidebar.info("Guest mode (history saqlanmaydi)")
+
+# ================= FILE =================
 uploaded_file = st.file_uploader(
-    "📎 Upload file",
+    "📎 Attach file",
     type=["txt"],
     key=st.session_state.uploader_key
 )
 
 if uploaded_file:
-    with st.spinner("Processing file..."):
-        load_file(uploaded_file)
-        docs = search(" ")
+    load_file(uploaded_file)
+    docs = search(" ")
 
-        st.session_state.temp_file_context = "\n\n".join(docs) if docs else ""
-        st.session_state.temp_file_name = uploaded_file.name
+    st.session_state.temp_file_context = "\n\n".join(docs)
+    st.session_state.temp_file_name = uploaded_file.name
 
-    st.success("File uploaded")
+    st.success("File ready")
 
-
-# ---------------- HISTORY ----------------
+# ================= LOAD HISTORY =================
 def load_history():
     return supabase.table("chat_history") \
         .select("*") \
@@ -199,23 +182,23 @@ def load_history():
         .order("created_at") \
         .execute().data
 
+# ================= DISPLAY =================
+if is_logged_in:
+    history = load_history()
 
-chat_history = load_history()
+    for msg in history:
+        if msg["role"] == "user":
+            st.markdown(f"<div class='user-msg'>{msg['content']}</div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div class='bot-msg'>{msg['content']}</div>", unsafe_allow_html=True)
+else:
+    for msg in st.session_state.guest_chat:
+        if msg["role"] == "user":
+            st.markdown(f"<div class='user-msg'>{msg['content']}</div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div class='bot-msg'>{msg['content']}</div>", unsafe_allow_html=True)
 
-for msg in chat_history:
-    if msg["role"] == "user":
-        st.markdown(
-            f"<div class='user-msg'>{msg['content']}</div>",
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(
-            f"<div class='bot-msg'>{msg['content']}</div>",
-            unsafe_allow_html=True
-        )
-
-
-# ---------------- SAVE MESSAGE ----------------
+# ================= SAVE =================
 def save_message(role, content):
     supabase.table("chat_history").insert({
         "user_id": uid,
@@ -224,15 +207,15 @@ def save_message(role, content):
         "content": content
     }).execute()
 
-
-# ---------------- CHAT ----------------
+# ================= CHAT =================
 query = st.chat_input("Savol yozing...")
 
 if query:
 
-    attached_file = st.session_state.temp_file_name
-    attached_context = st.session_state.temp_file_context
+    file_name = st.session_state.temp_file_name
+    file_context = st.session_state.temp_file_context
 
+    # RESET FILE (only once)
     st.session_state.temp_file_name = None
     st.session_state.temp_file_context = None
     st.session_state.uploader_key += 1
@@ -244,7 +227,7 @@ if query:
 You are a helpful assistant.
 
 FILE CONTEXT:
-{(attached_context or "")[:1500]}
+{(file_context or "")[:1500]}
 
 FAQ CONTEXT:
 {rag_context}
@@ -257,16 +240,18 @@ Answer:
 
     with st.spinner("Thinking..."):
         response = client.models.generate_content(
-            model="models/gemini-2.5-flash-lite",
+            model="models/gemini-1.5-flash",
             contents=[prompt]
         )
 
     answer = response.text if response.text else "No response"
 
-    save_message("user", query)
-    save_message("assistant", answer)
+    # SAVE
+    if is_logged_in:
+        save_message("user", query)
+        save_message("assistant", answer)
+    else:
+        st.session_state.guest_chat.append({"role": "user", "content": query})
+        st.session_state.guest_chat.append({"role": "assistant", "content": answer})
+
     st.rerun()
-    st.markdown(
-        f"<div class='bot-msg'>{answer}</div>",
-        unsafe_allow_html=True
-    )
