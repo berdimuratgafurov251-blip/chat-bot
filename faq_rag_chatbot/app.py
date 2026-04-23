@@ -16,9 +16,12 @@ client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # ---------------- PAGE ----------------
 st.set_page_config(
-    page_title="Smart FAQ Chatbot RAG",   # 🔥 RESTORED TITLE
+    page_title="Smart FAQ Chatbot RAG",
     layout="centered"
 )
+
+# 🔥 TITLE FIX (ONLY ADDITION)
+st.title("🤖 Smart FAQ Chatbot RAG")
 
 # ================= CSS =================
 st.markdown("""
