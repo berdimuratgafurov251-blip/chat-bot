@@ -45,14 +45,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ================= SESSION INIT =================
+# ================= SESSION =================
 defaults = {
     "user": None,
     "auth_page": None,
     "chat_id": str(uuid.uuid4()),
     "guest_chat": [],
     "temp_file_context": None,
-    "temp_file_name": None,
     "uploader_key": 0
 }
 
@@ -70,21 +69,18 @@ def login_page():
         submitted = st.form_submit_button("Login")
 
         if submitted:
-            if not email or not password:
-                st.error("Fill all fields")
-            else:
-                try:
-                    res = supabase.auth.sign_in_with_password({
-                        "email": email,
-                        "password": password
-                    })
-                    st.session_state.user = res.user
-                    st.session_state.auth_page = None
-                    st.rerun()
-                except:
-                    st.error("Invalid credentials")
+            try:
+                res = supabase.auth.sign_in_with_password({
+                    "email": email,
+                    "password": password
+                })
+                st.session_state.user = res.user
+                st.session_state.auth_page = None
+                st.rerun()
+            except:
+                st.error("Login error")
 
-    if st.button("Go to Register"):
+    if st.button("Go Register"):
         st.session_state.auth_page = "register"
         st.rerun()
 
@@ -92,28 +88,26 @@ def login_page():
 def register_page():
     st.title("📝 Register")
 
-    with st.form("register_form"):
+    with st.form("reg"):
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
-        confirm = st.text_input("Confirm Password", type="password")
+        confirm = st.text_input("Confirm", type="password")
         submitted = st.form_submit_button("Create")
 
         if submitted:
-            if not email or not password or not confirm:
-                st.error("Fill all fields")
-            elif password != confirm:
-                st.error("Passwords do not match")
+            if password != confirm:
+                st.error("Passwords mismatch")
             else:
                 try:
                     supabase.auth.sign_up({
                         "email": email,
                         "password": password
                     })
-                    st.success("Account created")
+                    st.success("Created!")
                 except:
                     st.error("Error")
 
-    if st.button("Back to Login"):
+    if st.button("Back"):
         st.session_state.auth_page = "login"
         st.rerun()
 
@@ -121,10 +115,44 @@ def register_page():
 is_logged_in = st.session_state.user is not None
 uid = st.session_state.user.id if is_logged_in else "guest"
 
-# ================= SIDEBAR (ALWAYS ACTIVE) =================
+# =========================================================
+# SIDEBAR STRUCTURE (FIXED ORDER)
+# =========================================================
+
+st.sidebar.title("👤 Account")
+
+# ---- AUTH ----
+if not is_logged_in:
+    if st.sidebar.button("🔐 Login"):
+        st.session_state.auth_page = "login"
+        st.rerun()
+
+    if st.sidebar.button("🆕 Register"):
+        st.session_state.auth_page = "register"
+        st.rerun()
+else:
+    st.sidebar.success(st.session_state.user.email)
+
+    if st.sidebar.button("🚪 Logout"):
+        supabase.auth.sign_out()
+        st.session_state.user = None
+        st.rerun()
+
+# ---------------- AUTH ROUTER ----------------
+if st.session_state.auth_page == "login":
+    login_page()
+    st.stop()
+
+if st.session_state.auth_page == "register":
+    register_page()
+    st.stop()
+
+# =========================================================
+# CONTROL PANEL (NOW BELOW ACCOUNT - FIXED)
+# =========================================================
+st.sidebar.markdown("---")
 st.sidebar.title("⚙️ Control Panel")
 
-# ---- CHAT ACTIONS ----
 if st.sidebar.button("➕ New Chat"):
     st.session_state.chat_id = str(uuid.uuid4())
     if not is_logged_in:
@@ -142,35 +170,10 @@ if st.sidebar.button("🧹 Clear Chat"):
         st.session_state.guest_chat = []
     st.rerun()
 
-# ---- AUTH BUTTONS ----
+# =========================================================
+# CHATS LIST
+# =========================================================
 st.sidebar.markdown("---")
-
-if not is_logged_in:
-    if st.sidebar.button("🔐 Login"):
-        st.session_state.auth_page = "login"
-        st.rerun()
-
-    if st.sidebar.button("🆕 Register"):
-        st.session_state.auth_page = "register"
-        st.rerun()
-else:
-    st.sidebar.success(st.session_state.user.email)
-
-    if st.sidebar.button("🚪 Logout"):
-        supabase.auth.sign_out()
-        st.session_state.user = None
-        st.rerun()
-
-# ================= AUTH ROUTER =================
-if st.session_state.auth_page == "login":
-    login_page()
-    st.stop()
-
-if st.session_state.auth_page == "register":
-    register_page()
-    st.stop()
-
-# ================= CHAT LIST (USER ONLY) =================
 st.sidebar.title("💬 Chats")
 
 if is_logged_in:
@@ -191,9 +194,11 @@ if is_logged_in:
             st.session_state.chat_id = cid
             st.rerun()
 else:
-    st.sidebar.info("Guest mode (no history)")
+    st.sidebar.info("Guest mode")
 
-# ================= FILE UPLOAD =================
+# =========================================================
+# FILE UPLOAD
+# =========================================================
 uploaded_file = st.file_uploader(
     "📎 Upload file",
     type=["txt"],
@@ -204,10 +209,11 @@ if uploaded_file:
     load_file(uploaded_file)
     docs = search(" ")
     st.session_state.temp_file_context = "\n\n".join(docs)
-    st.session_state.temp_file_name = uploaded_file.name
     st.success("File loaded")
 
-# ================= HISTORY =================
+# =========================================================
+# HISTORY
+# =========================================================
 def load_history():
     return supabase.table("chat_history") \
         .select("*") \
@@ -216,20 +222,22 @@ def load_history():
         .order("created_at") \
         .execute().data
 
-# ================= DISPLAY =================
+# =========================================================
+# DISPLAY CHAT
+# =========================================================
 if is_logged_in:
     history = load_history()
     for m in history:
-        if m["role"] == "user":
-            st.markdown(f"<div class='user-msg'>{m['content']}</div>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<div class='bot-msg'>{m['content']}</div>", unsafe_allow_html=True)
+        cls = "user-msg" if m["role"] == "user" else "bot-msg"
+        st.markdown(f"<div class='{cls}'>{m['content']}</div>", unsafe_allow_html=True)
 else:
     for m in st.session_state.guest_chat:
         cls = "user-msg" if m["role"] == "user" else "bot-msg"
         st.markdown(f"<div class='{cls}'>{m['content']}</div>", unsafe_allow_html=True)
 
-# ================= SAVE =================
+# =========================================================
+# SAVE
+# =========================================================
 def save(role, content):
     supabase.table("chat_history").insert({
         "user_id": uid,
@@ -238,7 +246,9 @@ def save(role, content):
         "content": content
     }).execute()
 
-# ================= CHAT =================
+# =========================================================
+# CHAT INPUT
+# =========================================================
 query = st.chat_input("Savol yozing...")
 
 if query:
@@ -246,8 +256,8 @@ if query:
     st.session_state.temp_file_context = None
     st.session_state.uploader_key += 1
 
-    rag = search(query)
-    rag_context = "\n\n".join(rag[:3]) if rag else ""
+    docs = search(query)
+    rag_context = "\n\n".join(docs[:3]) if docs else ""
 
     prompt = f"""
 FILE:
