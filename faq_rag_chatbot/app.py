@@ -81,6 +81,7 @@ if "uploader_key" not in st.session_state:
 def login_page():
     st.title("🔐 Login")
 
+    # 🔥 FORM
     with st.form("login_form"):
 
         email = st.text_input("Email")
@@ -90,38 +91,32 @@ def login_page():
 
         if submitted:
 
-            # 🔴 VALIDATION
             if not email and not password:
                 st.error("Please fill out all fields")
-                return
-
-            if not email:
+            elif not email:
                 st.error("Email is required")
-                return
-
-            if not password:
+            elif not password:
                 st.error("Password is required")
-                return
+            else:
+                try:
+                    res = supabase.auth.sign_in_with_password({
+                        "email": email,
+                        "password": password
+                    })
 
-            # 🔐 LOGIN
-            try:
-                res = supabase.auth.sign_in_with_password({
-                    "email": email,
-                    "password": password
-                })
+                    st.session_state.user = res.user
+                    st.session_state.auth_page = None
+                    st.rerun()
 
-                st.session_state.user = res.user
-                st.session_state.auth_page = None
-                st.rerun()
+                except Exception:
+                    st.error("Invalid email or password")
 
-            except Exception:
-                st.error("Invalid email or password")
+    # 🔥 FORM DAN TASHQARIDA (MUHIM)
+    st.markdown("---")
 
-    # 🔁 SWITCH
     if st.button("Go to Register"):
         st.session_state.auth_page = "register"
         st.rerun()
-
 # ================= REGISTER =================
 def register_page():
     st.title("🆕 Register")
