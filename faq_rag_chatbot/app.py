@@ -119,19 +119,45 @@ def login_page():
         st.rerun()
 # ================= REGISTER =================
 def register_page():
-    st.title("🆕 Register")
+    st.title("📝 Create Account")
 
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
+    # 🔥 FORM
+    with st.form("register_form"):
 
-    if st.button("Create Account"):
-        supabase.auth.sign_up({
-            "email": email,
-            "password": password
-        })
-        st.success("Check your email!")
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+        confirm = st.text_input("Confirm Password", type="password")
 
-    if st.button("Back to Login"):
+        submitted = st.form_submit_button("Create Account")
+
+        if submitted:
+
+            # 🔴 VALIDATION
+            if not email and not password and not confirm:
+                st.error("Please fill out all fields")
+            elif not email:
+                st.error("Email is required")
+            elif not password:
+                st.error("Password is required")
+            elif not confirm:
+                st.error("Please confirm your password")
+            elif password != confirm:
+                st.error("Passwords do not match")
+            else:
+                try:
+                    supabase.auth.sign_up({
+                        "email": email,
+                        "password": password
+                    })
+
+                    st.success("Account created! Please login.")
+                except Exception:
+                    st.error("Registration failed")
+
+    # 🔥 FORM DAN TASHQARIDA (MUHIM)
+    st.markdown("---")
+
+    if st.button("⬅️ Back to Login"):
         st.session_state.auth_page = "login"
         st.rerun()
 
