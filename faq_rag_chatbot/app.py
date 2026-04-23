@@ -42,105 +42,65 @@ st.markdown("""
     margin-right: auto;
     border: 1px solid #ddd;
 }
-
-.stButton>button {
-    background-color: #222;
-    color: white;
-    border-radius: 8px;
-}
-
-.stButton>button:hover {
-    background-color: #444;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# ================= SESSION =================
-if "user" not in st.session_state:
-    st.session_state.user = None
+# ================= SESSION INIT =================
+defaults = {
+    "user": None,
+    "auth_page": None,
+    "chat_id": str(uuid.uuid4()),
+    "guest_chat": [],
+    "temp_file_context": None,
+    "temp_file_name": None,
+    "uploader_key": 0
+}
 
-if "auth_page" not in st.session_state:
-    st.session_state.auth_page = None  # login / register
+for k, v in defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
-if "chat_id" not in st.session_state:
-    st.session_state.chat_id = str(uuid.uuid4())
-
-if "guest_chat" not in st.session_state:
-    st.session_state.guest_chat = []
-
-if "temp_file_name" not in st.session_state:
-    st.session_state.temp_file_name = None
-
-if "temp_file_context" not in st.session_state:
-    st.session_state.temp_file_context = None
-
-if "uploader_key" not in st.session_state:
-    st.session_state.uploader_key = 0
-
-# ================= LOGIN =================
+# ================= AUTH PAGES =================
 def login_page():
     st.title("🔐 Login")
 
-    # 🔥 FORM
     with st.form("login_form"):
-
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
-
         submitted = st.form_submit_button("Login")
 
         if submitted:
-
-            if not email and not password:
-                st.error("Please fill out all fields")
-            elif not email:
-                st.error("Email is required")
-            elif not password:
-                st.error("Password is required")
+            if not email or not password:
+                st.error("Fill all fields")
             else:
                 try:
                     res = supabase.auth.sign_in_with_password({
                         "email": email,
                         "password": password
                     })
-
                     st.session_state.user = res.user
                     st.session_state.auth_page = None
                     st.rerun()
-
-                except Exception:
-                    st.error("Invalid email or password")
-
-    # 🔥 FORM DAN TASHQARIDA (MUHIM)
-    st.markdown("---")
+                except:
+                    st.error("Invalid credentials")
 
     if st.button("Go to Register"):
         st.session_state.auth_page = "register"
         st.rerun()
-# ================= REGISTER =================
+
+
 def register_page():
-    st.title("📝 Create Account")
+    st.title("📝 Register")
 
-    # 🔥 FORM
     with st.form("register_form"):
-
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         confirm = st.text_input("Confirm Password", type="password")
-
-        submitted = st.form_submit_button("Create Account")
+        submitted = st.form_submit_button("Create")
 
         if submitted:
-
-            # 🔴 VALIDATION
-            if not email and not password and not confirm:
-                st.error("Please fill out all fields")
-            elif not email:
-                st.error("Email is required")
-            elif not password:
-                st.error("Password is required")
-            elif not confirm:
-                st.error("Please confirm your password")
+            if not email or not password or not confirm:
+                st.error("Fill all fields")
             elif password != confirm:
                 st.error("Passwords do not match")
             else:
@@ -149,57 +109,26 @@ def register_page():
                         "email": email,
                         "password": password
                     })
+                    st.success("Account created")
+                except:
+                    st.error("Error")
 
-                    st.success("Account created! Please login.")
-                except Exception:
-                    st.error("Registration failed")
-
-    # 🔥 FORM DAN TASHQARIDA (MUHIM)
-    st.markdown("---")
-
-    if st.button("⬅️ Back to Login"):
+    if st.button("Back to Login"):
         st.session_state.auth_page = "login"
         st.rerun()
-
-# ================= SIDEBAR AUTH =================
-st.sidebar.title("👤 Account")
-
-if st.session_state.user:
-    st.sidebar.success(st.session_state.user.email)
-
-    if st.sidebar.button("Logout"):
-        supabase.auth.sign_out()
-        st.session_state.user = None
-        st.rerun()
-else:
-    if st.sidebar.button("🔐 Login"):
-        st.session_state.auth_page = "login"
-
-    if st.sidebar.button("🆕 Register"):
-        st.session_state.auth_page = "register"
-
-# AUTH PAGE CONTROL
-if st.session_state.auth_page == "login":
-    login_page()
-    st.stop()
-
-if st.session_state.auth_page == "register":
-    register_page()
-    st.stop()
 
 # ================= MODE =================
 is_logged_in = st.session_state.user is not None
 uid = st.session_state.user.id if is_logged_in else "guest"
 
-# ================= SIDEBAR CHAT =================
-st.sidebar.title("💬 Chats")
+# ================= SIDEBAR (ALWAYS ACTIVE) =================
+st.sidebar.title("⚙️ Control Panel")
 
+# ---- CHAT ACTIONS ----
 if st.sidebar.button("➕ New Chat"):
     st.session_state.chat_id = str(uuid.uuid4())
-
     if not is_logged_in:
         st.session_state.guest_chat = []
-
     st.rerun()
 
 if st.sidebar.button("🧹 Clear Chat"):
@@ -211,10 +140,39 @@ if st.sidebar.button("🧹 Clear Chat"):
             .execute()
     else:
         st.session_state.guest_chat = []
-
     st.rerun()
 
-# ================= LOAD CHAT LIST =================
+# ---- AUTH BUTTONS ----
+st.sidebar.markdown("---")
+
+if not is_logged_in:
+    if st.sidebar.button("🔐 Login"):
+        st.session_state.auth_page = "login"
+        st.rerun()
+
+    if st.sidebar.button("🆕 Register"):
+        st.session_state.auth_page = "register"
+        st.rerun()
+else:
+    st.sidebar.success(st.session_state.user.email)
+
+    if st.sidebar.button("🚪 Logout"):
+        supabase.auth.sign_out()
+        st.session_state.user = None
+        st.rerun()
+
+# ================= AUTH ROUTER =================
+if st.session_state.auth_page == "login":
+    login_page()
+    st.stop()
+
+if st.session_state.auth_page == "register":
+    register_page()
+    st.stop()
+
+# ================= CHAT LIST (USER ONLY) =================
+st.sidebar.title("💬 Chats")
+
 if is_logged_in:
     def load_chat_list():
         res = supabase.table("chat_history") \
@@ -224,25 +182,20 @@ if is_logged_in:
             .execute()
 
         chats = {}
-        for row in res.data:
-            cid = row["chat_id"]
-            if cid not in chats:
-                chats[cid] = row["content"][:30]
-
+        for r in res.data:
+            chats.setdefault(r["chat_id"], r["content"][:30])
         return chats
 
-    chat_list = load_chat_list()
-
-    for cid, title in chat_list.items():
+    for cid, title in load_chat_list().items():
         if st.sidebar.button(title, key=cid):
             st.session_state.chat_id = cid
             st.rerun()
 else:
-    st.sidebar.info("Guest mode (history saqlanmaydi)")
+    st.sidebar.info("Guest mode (no history)")
 
-# ================= FILE =================
+# ================= FILE UPLOAD =================
 uploaded_file = st.file_uploader(
-    "📎 Attach file",
+    "📎 Upload file",
     type=["txt"],
     key=st.session_state.uploader_key
 )
@@ -250,13 +203,11 @@ uploaded_file = st.file_uploader(
 if uploaded_file:
     load_file(uploaded_file)
     docs = search(" ")
-
     st.session_state.temp_file_context = "\n\n".join(docs)
     st.session_state.temp_file_name = uploaded_file.name
+    st.success("File loaded")
 
-    st.success("File ready")
-
-# ================= LOAD HISTORY =================
+# ================= HISTORY =================
 def load_history():
     return supabase.table("chat_history") \
         .select("*") \
@@ -268,24 +219,18 @@ def load_history():
 # ================= DISPLAY =================
 if is_logged_in:
     history = load_history()
-
-    for msg in history:
-        role = msg["role"]
-        content = msg["content"]
-
-        if role == "user":
-            st.markdown(f"<div class='user-msg'>{content}</div>", unsafe_allow_html=True)
+    for m in history:
+        if m["role"] == "user":
+            st.markdown(f"<div class='user-msg'>{m['content']}</div>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div class='bot-msg'>{content}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='bot-msg'>{m['content']}</div>", unsafe_allow_html=True)
 else:
-    for msg in st.session_state.guest_chat:
-        if msg["role"] == "user":
-            st.markdown(f"<div class='user-msg'>{msg['content']}</div>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<div class='bot-msg'>{msg['content']}</div>", unsafe_allow_html=True)
+    for m in st.session_state.guest_chat:
+        cls = "user-msg" if m["role"] == "user" else "bot-msg"
+        st.markdown(f"<div class='{cls}'>{m['content']}</div>", unsafe_allow_html=True)
 
 # ================= SAVE =================
-def save_message(role, content):
+def save(role, content):
     supabase.table("chat_history").insert({
         "user_id": uid,
         "chat_id": st.session_state.chat_id,
@@ -297,42 +242,37 @@ def save_message(role, content):
 query = st.chat_input("Savol yozing...")
 
 if query:
-
     file_context = st.session_state.temp_file_context
-
     st.session_state.temp_file_context = None
-    st.session_state.temp_file_name = None
     st.session_state.uploader_key += 1
 
-    docs = search(query)
-    rag_context = "\n\n".join(docs[:3]) if docs else ""
+    rag = search(query)
+    rag_context = "\n\n".join(rag[:3]) if rag else ""
 
     prompt = f"""
-You are a helpful assistant.
-
-FILE CONTEXT:
+FILE:
 {(file_context or "")[:1500]}
 
-FAQ CONTEXT:
+FAQ:
 {rag_context}
 
-Question:
+Q:
 {query}
 
-Answer:
+A:
 """
 
     with st.spinner("Thinking..."):
         response = client.models.generate_content(
-            model="models/gemini-2.5-flash",  # 🔥 UPDATED MODEL
+            model="models/gemini-2.5-flash",
             contents=[prompt]
         )
 
-    answer = response.text if response.text else "No response"
+    answer = response.text or "No response"
 
     if is_logged_in:
-        save_message("user", query)
-        save_message("assistant", answer)
+        save("user", query)
+        save("assistant", answer)
     else:
         st.session_state.guest_chat.append({"role": "user", "content": query})
         st.session_state.guest_chat.append({"role": "assistant", "content": answer})
