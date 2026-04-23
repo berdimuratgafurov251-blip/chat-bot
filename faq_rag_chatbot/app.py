@@ -59,6 +59,9 @@ st.markdown("""
 if "user" not in st.session_state:
     st.session_state.user = None
 
+if "show_login" not in st.session_state:
+    st.session_state.show_login = False
+
 if "chat_id" not in st.session_state:
     st.session_state.chat_id = str(uuid.uuid4())
 
@@ -88,6 +91,7 @@ def login_page():
             "password": password
         })
         st.session_state.user = res.user
+        st.session_state.show_login = False   # 🔥 FIX
         st.rerun()
 
     if st.button("Register"):
@@ -98,11 +102,11 @@ def login_page():
         st.success("Check your email!")
 
 
-# ================= AUTH =================
+# ================= SIDEBAR AUTH =================
 st.sidebar.title("👤 Account")
 
 if st.session_state.user:
-    st.sidebar.success(f"{st.session_state.user.email}")
+    st.sidebar.success(st.session_state.user.email)
 
     if st.sidebar.button("Logout"):
         supabase.auth.sign_out()
@@ -110,14 +114,18 @@ if st.session_state.user:
         st.rerun()
 else:
     if st.sidebar.button("🔐 Login / Register"):
-        login_page()
-        st.stop()
+        st.session_state.show_login = True
+
+# 🔥 LOGIN PAGE CONTROL
+if st.session_state.show_login:
+    login_page()
+    st.stop()
 
 # USER MODE
 is_logged_in = st.session_state.user is not None
 uid = st.session_state.user.id if is_logged_in else "guest"
 
-# ================= SIDEBAR =================
+# ================= SIDEBAR CHAT =================
 if is_logged_in:
     st.sidebar.title("💬 Chats")
 
@@ -146,13 +154,6 @@ if is_logged_in:
         if st.sidebar.button(title, key=cid):
             st.session_state.chat_id = cid
             st.rerun()
-
-    if st.sidebar.button("🧹 Clear Chat"):
-        supabase.table("chat_history") \
-            .delete() \
-            .eq("user_id", uid) \
-            .eq("chat_id", st.session_state.chat_id) \
-            .execute()
 
 else:
     st.sidebar.info("Guest mode (history saqlanmaydi)")
@@ -215,7 +216,7 @@ if query:
     file_name = st.session_state.temp_file_name
     file_context = st.session_state.temp_file_context
 
-    # RESET FILE (only once)
+    # RESET FILE
     st.session_state.temp_file_name = None
     st.session_state.temp_file_context = None
     st.session_state.uploader_key += 1
@@ -246,7 +247,6 @@ Answer:
 
     answer = response.text if response.text else "No response"
 
-    # SAVE
     if is_logged_in:
         save_message("user", query)
         save_message("assistant", answer)
