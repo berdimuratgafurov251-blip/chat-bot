@@ -81,66 +81,41 @@ if "uploader_key" not in st.session_state:
 def login_page():
     st.title("🔐 Login")
 
-    # 🔥 ERROR STATE
-    if "login_error" not in st.session_state:
-        st.session_state.login_error = {}
+    with st.form("login_form"):
 
-    email = st.text_input(
-        "Email",
-        key="login_email"
-    )
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
 
-    password = st.text_input(
-        "Password",
-        type="password",
-        key="login_password"
-    )
+        submitted = st.form_submit_button("Login")
 
-    error = False
+        if submitted:
 
-    if st.button("Login"):
+            # 🔴 VALIDATION
+            if not email and not password:
+                st.error("Please fill out all fields")
+                return
 
-        st.session_state.login_error = {}
+            if not email:
+                st.error("Email is required")
+                return
 
-        # 🔴 EMAIL VALIDATION
-        if not email:
-            st.session_state.login_error["email"] = "Please fill out this field"
-            error = True
+            if not password:
+                st.error("Password is required")
+                return
 
-        # 🔴 PASSWORD VALIDATION
-        if not password:
-            st.session_state.login_error["password"] = "Please fill out this field"
-            error = True
+            # 🔐 LOGIN
+            try:
+                res = supabase.auth.sign_in_with_password({
+                    "email": email,
+                    "password": password
+                })
 
-        if error:
-            return
+                st.session_state.user = res.user
+                st.session_state.auth_page = None
+                st.rerun()
 
-        # 🔥 SUPABASE LOGIN (try catch)
-        try:
-            res = supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-
-            st.session_state.user = res.user
-            st.session_state.auth_page = None
-            st.rerun()
-
-        except Exception:
-            st.error("Invalid email or password")
-
-    # 🔴 ERROR MESSAGES
-    if "email" in st.session_state.login_error:
-        st.markdown(
-            "<span style='color:red;font-size:12px'>Please fill out this field</span>",
-            unsafe_allow_html=True
-        )
-
-    if "password" in st.session_state.login_error:
-        st.markdown(
-            "<span style='color:red;font-size:12px'>Please fill out this field</span>",
-            unsafe_allow_html=True
-        )
+            except Exception:
+                st.error("Invalid email or password")
 
     # 🔁 SWITCH
     if st.button("Go to Register"):
