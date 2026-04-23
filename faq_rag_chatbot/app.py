@@ -81,18 +81,68 @@ if "uploader_key" not in st.session_state:
 def login_page():
     st.title("🔐 Login")
 
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
+    # 🔥 ERROR STATE
+    if "login_error" not in st.session_state:
+        st.session_state.login_error = {}
+
+    email = st.text_input(
+        "Email",
+        key="login_email"
+    )
+
+    password = st.text_input(
+        "Password",
+        type="password",
+        key="login_password"
+    )
+
+    error = False
 
     if st.button("Login"):
-        res = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-        st.session_state.user = res.user
-        st.session_state.auth_page = None
-        st.rerun()
 
+        st.session_state.login_error = {}
+
+        # 🔴 EMAIL VALIDATION
+        if not email:
+            st.session_state.login_error["email"] = "Please fill out this field"
+            error = True
+
+        # 🔴 PASSWORD VALIDATION
+        if not password:
+            st.session_state.login_error["password"] = "Please fill out this field"
+            error = True
+
+        if error:
+            return
+
+        # 🔥 SUPABASE LOGIN (try catch)
+        try:
+            res = supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
+
+            st.session_state.user = res.user
+            st.session_state.auth_page = None
+            st.rerun()
+
+        except Exception:
+            st.error("Invalid email or password")
+
+    # 🔴 ERROR MESSAGES
+    if "email" in st.session_state.login_error:
+        st.markdown(
+            "<span style='color:red;font-size:12px'>Please fill out this field</span>",
+            unsafe_allow_html=True
+        )
+
+    if "password" in st.session_state.login_error:
+        st.markdown(
+            "<span style='color:red;font-size:12px'>Please fill out this field</span>",
+            unsafe_allow_html=True
+        )
+
+    # 🔁 SWITCH
     if st.button("Go to Register"):
         st.session_state.auth_page = "register"
         st.rerun()
