@@ -15,7 +15,10 @@ supabase = create_client(
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # ---------------- PAGE ----------------
-st.set_page_config(page_title="FAQ RAG Chatbot", layout="centered")
+st.set_page_config(
+    page_title="Smart FAQ Chatbot RAG",   # 🔥 RESTORED TITLE
+    layout="centered"
+)
 
 # ================= CSS =================
 st.markdown("""
@@ -115,13 +118,9 @@ def register_page():
 is_logged_in = st.session_state.user is not None
 uid = st.session_state.user.id if is_logged_in else "guest"
 
-# =========================================================
-# SIDEBAR STRUCTURE (FIXED ORDER)
-# =========================================================
-
+# ================= SIDEBAR =================
 st.sidebar.title("👤 Account")
 
-# ---- AUTH ----
 if not is_logged_in:
     if st.sidebar.button("🔐 Login"):
         st.session_state.auth_page = "login"
@@ -138,7 +137,7 @@ else:
         st.session_state.user = None
         st.rerun()
 
-# ---------------- AUTH ROUTER ----------------
+# ---------------- ROUTER ----------------
 if st.session_state.auth_page == "login":
     login_page()
     st.stop()
@@ -147,9 +146,7 @@ if st.session_state.auth_page == "register":
     register_page()
     st.stop()
 
-# =========================================================
-# CONTROL PANEL (NOW BELOW ACCOUNT - FIXED)
-# =========================================================
+# ================= CONTROL PANEL =================
 st.sidebar.markdown("---")
 st.sidebar.title("⚙️ Control Panel")
 
@@ -170,9 +167,7 @@ if st.sidebar.button("🧹 Clear Chat"):
         st.session_state.guest_chat = []
     st.rerun()
 
-# =========================================================
-# CHATS LIST
-# =========================================================
+# ================= CHAT LIST =================
 st.sidebar.markdown("---")
 st.sidebar.title("💬 Chats")
 
@@ -196,9 +191,7 @@ if is_logged_in:
 else:
     st.sidebar.info("Guest mode")
 
-# =========================================================
-# FILE UPLOAD
-# =========================================================
+# ================= FILE =================
 uploaded_file = st.file_uploader(
     "📎 Upload file",
     type=["txt"],
@@ -211,9 +204,7 @@ if uploaded_file:
     st.session_state.temp_file_context = "\n\n".join(docs)
     st.success("File loaded")
 
-# =========================================================
-# HISTORY
-# =========================================================
+# ================= HISTORY =================
 def load_history():
     return supabase.table("chat_history") \
         .select("*") \
@@ -222,9 +213,7 @@ def load_history():
         .order("created_at") \
         .execute().data
 
-# =========================================================
-# DISPLAY CHAT
-# =========================================================
+# ================= DISPLAY =================
 if is_logged_in:
     history = load_history()
     for m in history:
@@ -235,9 +224,7 @@ else:
         cls = "user-msg" if m["role"] == "user" else "bot-msg"
         st.markdown(f"<div class='{cls}'>{m['content']}</div>", unsafe_allow_html=True)
 
-# =========================================================
-# SAVE
-# =========================================================
+# ================= SAVE =================
 def save(role, content):
     supabase.table("chat_history").insert({
         "user_id": uid,
@@ -246,9 +233,7 @@ def save(role, content):
         "content": content
     }).execute()
 
-# =========================================================
-# CHAT INPUT
-# =========================================================
+# ================= CHAT =================
 query = st.chat_input("Savol yozing...")
 
 if query:
