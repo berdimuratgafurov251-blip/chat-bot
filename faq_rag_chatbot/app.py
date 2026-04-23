@@ -43,14 +43,14 @@ st.markdown("""
     border: 1px solid #ddd;
 }
 
-.file-chip {
-    display: block;
-    background: #eee;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    margin-bottom: 4px;
-    width: fit-content;
+.stButton>button {
+    background-color: #222;
+    color: white;
+    border-radius: 8px;
+}
+
+.stButton>button:hover {
+    background-color: #444;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -59,8 +59,8 @@ st.markdown("""
 if "user" not in st.session_state:
     st.session_state.user = None
 
-if "show_login" not in st.session_state:
-    st.session_state.show_login = False
+if "auth_page" not in st.session_state:
+    st.session_state.auth_page = None  # login / register
 
 if "chat_id" not in st.session_state:
     st.session_state.chat_id = str(uuid.uuid4())
@@ -77,8 +77,7 @@ if "temp_file_context" not in st.session_state:
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
 
-
-# ================= LOGIN PAGE =================
+# ================= LOGIN =================
 def login_page():
     st.title("🔐 Login")
 
@@ -91,16 +90,30 @@ def login_page():
             "password": password
         })
         st.session_state.user = res.user
-        st.session_state.show_login = False   # 🔥 FIX
+        st.session_state.auth_page = None
         st.rerun()
 
-    if st.button("Register"):
+    if st.button("Go to Register"):
+        st.session_state.auth_page = "register"
+        st.rerun()
+
+# ================= REGISTER =================
+def register_page():
+    st.title("🆕 Register")
+
+    email = st.text_input("Email")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Create Account"):
         supabase.auth.sign_up({
             "email": email,
             "password": password
         })
         st.success("Check your email!")
 
+    if st.button("Back to Login"):
+        st.session_state.auth_page = "login"
+        st.rerun()
 
 # ================= SIDEBAR AUTH =================
 st.sidebar.title("👤 Account")
@@ -113,26 +126,50 @@ if st.session_state.user:
         st.session_state.user = None
         st.rerun()
 else:
-    if st.sidebar.button("🔐 Login / Register"):
-        st.session_state.show_login = True
+    if st.sidebar.button("🔐 Login"):
+        st.session_state.auth_page = "login"
 
-# 🔥 LOGIN PAGE CONTROL
-if st.session_state.show_login:
+    if st.sidebar.button("🆕 Register"):
+        st.session_state.auth_page = "register"
+
+# AUTH PAGE CONTROL
+if st.session_state.auth_page == "login":
     login_page()
     st.stop()
 
-# USER MODE
+if st.session_state.auth_page == "register":
+    register_page()
+    st.stop()
+
+# ================= MODE =================
 is_logged_in = st.session_state.user is not None
 uid = st.session_state.user.id if is_logged_in else "guest"
 
 # ================= SIDEBAR CHAT =================
+st.sidebar.title("💬 Chats")
+
+if st.sidebar.button("➕ New Chat"):
+    st.session_state.chat_id = str(uuid.uuid4())
+
+    if not is_logged_in:
+        st.session_state.guest_chat = []
+
+    st.rerun()
+
+if st.sidebar.button("🧹 Clear Chat"):
+    if is_logged_in:
+        supabase.table("chat_history") \
+            .delete() \
+            .eq("user_id", uid) \
+            .eq("chat_id", st.session_state.chat_id) \
+            .execute()
+    else:
+        st.session_state.guest_chat = []
+
+    st.rerun()
+
+# ================= LOAD CHAT LIST =================
 if is_logged_in:
-    st.sidebar.title("💬 Chats")
-
-    if st.sidebar.button("➕ New Chat"):
-        st.session_state.chat_id = str(uuid.uuid4())
-        st.rerun()
-
     def load_chat_list():
         res = supabase.table("chat_history") \
             .select("chat_id, content, created_at") \
@@ -154,7 +191,6 @@ if is_logged_in:
         if st.sidebar.button(title, key=cid):
             st.session_state.chat_id = cid
             st.rerun()
-
 else:
     st.sidebar.info("Guest mode (history saqlanmaydi)")
 
@@ -188,10 +224,13 @@ if is_logged_in:
     history = load_history()
 
     for msg in history:
-        if msg["role"] == "user":
-            st.markdown(f"<div class='user-msg'>{msg['content']}</div>", unsafe_allow_html=True)
+        role = msg["role"]
+        content = msg["content"]
+
+        if role == "user":
+            st.markdown(f"<div class='user-msg'>{content}</div>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div class='bot-msg'>{msg['content']}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='bot-msg'>{content}</div>", unsafe_allow_html=True)
 else:
     for msg in st.session_state.guest_chat:
         if msg["role"] == "user":
@@ -213,12 +252,10 @@ query = st.chat_input("Savol yozing...")
 
 if query:
 
-    file_name = st.session_state.temp_file_name
     file_context = st.session_state.temp_file_context
 
-    # RESET FILE
-    st.session_state.temp_file_name = None
     st.session_state.temp_file_context = None
+    st.session_state.temp_file_name = None
     st.session_state.uploader_key += 1
 
     docs = search(query)
@@ -241,7 +278,7 @@ Answer:
 
     with st.spinner("Thinking..."):
         response = client.models.generate_content(
-            model="models/gemini-2.5-flash",
+            model="models/gemini-2.5-flash",  # 🔥 UPDATED MODEL
             contents=[prompt]
         )
 
