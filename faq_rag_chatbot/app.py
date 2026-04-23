@@ -240,7 +240,7 @@ Answer:
 
     with st.spinner("Thinking..."):
         response = client.models.generate_content(
-            model="models/gemini-1.5-flash",
+            model="models/gemini-2.5-flash",
             contents=[prompt]
         )
 
