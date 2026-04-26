@@ -109,7 +109,7 @@ def register_page():
                         "email": email,
                         "password": password
                     })
-                    st.success("Created!")
+                    st.success("Please confirm your email address")
                 except:
                     st.error("Error")
 
