@@ -169,7 +169,11 @@ if st.sidebar.button("🧹 Clear Chat"):
     else:
         st.session_state.guest_chat = []
     st.rerun()
-
+    
+def save_uploaded_file(uploaded_file):
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(uploaded_file.getbuffer())
+        return tmp.name
 # ================= CHAT LIST =================
 st.sidebar.markdown("---")
 st.sidebar.title("💬 Chats")
@@ -210,10 +214,7 @@ if uploaded_file:
 
 
 
-def save_uploaded_file(uploaded_file):
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        tmp.write(uploaded_file.getbuffer())
-        return tmp.name
+
 # ================= HISTORY =================
 def load_history():
     return supabase.table("chat_history") \
