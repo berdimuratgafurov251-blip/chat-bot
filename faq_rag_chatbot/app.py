@@ -93,7 +93,8 @@ def login_page():
 
             except Exception as e:
                 st.error(f"Login error: {e}")
-
+    st.write("SESSION:", getattr(res, "session", None))
+    st.write("USER:", getattr(res, "user", None))
     if st.button("Go Register"):
         st.session_state.auth_page = "register"
         st.rerun()
