@@ -121,7 +121,7 @@ def register_page():
 is_logged_in = st.session_state.user is not None
 uid = st.session_state.user.id if is_logged_in else "guest"
 
-# ================= 🔴 ORIGINAL SIDEBAR (RESTORED) =================
+# ================= SIDEBAR =================
 st.sidebar.title("👤 Account")
 
 if not is_logged_in:
@@ -140,14 +140,50 @@ else:
         st.session_state.user = None
         st.rerun()
 
-# ROUTER
-if st.session_state.auth_page == "login":
-    login_page()
-    st.stop()
+# ---------------- CONTROL PANEL ----------------
+st.sidebar.markdown("---")
+st.sidebar.title("⚙️ Control Panel")
 
-if st.session_state.auth_page == "register":
-    register_page()
-    st.stop()
+if st.sidebar.button("➕ New Chat"):
+    st.session_state.chat_id = str(uuid.uuid4())
+    if not is_logged_in:
+        st.session_state.guest_chat = []
+    st.rerun()
+
+if st.sidebar.button("🧹 Clear Chat"):
+    if is_logged_in:
+        supabase.table("chat_history") \
+            .delete() \
+            .eq("user_id", uid) \
+            .eq("chat_id", st.session_state.chat_id) \
+            .execute()
+    else:
+        st.session_state.guest_chat = []
+    st.rerun()
+
+# ---------------- CHATS ----------------
+st.sidebar.markdown("---")
+st.sidebar.title("💬 Chats")
+
+if is_logged_in:
+    def load_chat_list():
+        res = supabase.table("chat_history") \
+            .select("chat_id, content, created_at") \
+            .eq("user_id", uid) \
+            .order("created_at", desc=True) \
+            .execute()
+
+        chats = {}
+        for r in res.data:
+            chats.setdefault(r["chat_id"], r["content"][:30])
+        return chats
+
+    for cid, title in load_chat_list().items():
+        if st.sidebar.button(title, key=cid):
+            st.session_state.chat_id = cid
+            st.rerun()
+else:
+    st.sidebar.info("Guest mode")
 
 # ================= FILE UPLOAD =================
 def save_uploaded_file(uploaded_file):
