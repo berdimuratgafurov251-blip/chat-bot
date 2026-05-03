@@ -20,39 +20,7 @@ st.set_page_config(
     page_title="Smart FAQ Chatbot RAG",
     layout="centered"
 )
-import streamlit as st
-from google import genai
 
-st.title("🔎 Gemini API Test Panel")
-
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-
-model = st.selectbox(
-    "Model tanla",
-    [
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-2.5-flash",
-        "gemini-2.5-pro",
-        "gemini-flash-latest"
-    ]
-)
-
-text = st.text_input("Test prompt", "hello")
-
-if st.button("Run Test"):
-    try:
-        response = client.models.generate_content(
-            model=model,
-            contents=[text]
-        )
-
-        st.success("SUCCESS ✅")
-        st.write(response.text)
-
-    except Exception as e:
-        st.error("ERROR ❌")
-        st.exception(e)
 st.title("🤖 Smart FAQ Chatbot RAG")
 
 # ================= CSS =================
@@ -304,7 +272,7 @@ ANSWER:
 
     with st.spinner("Thinking..."):
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="models/gemini-flash-latest",
             contents=[prompt[:6000]]
         )
 
