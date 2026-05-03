@@ -13,7 +13,6 @@ TEXT_FILE = "texts.pkl"
 index = None
 texts = []
 
-# ---------------- LOAD ----------------
 def load_index():
     global index, texts
 
@@ -27,7 +26,6 @@ def load_index():
         except:
             index = None
 
-# ---------------- SAVE ----------------
 def save_index():
     if index is not None:
         faiss.write_index(index, INDEX_FILE)
@@ -35,16 +33,13 @@ def save_index():
     with open(TEXT_FILE, "wb") as f:
         pickle.dump(texts, f)
 
-# ---------------- EMBEDDING ----------------
 def get_embedding(text):
     response = client.models.embed_content(
         model="models/gemini-embedding-001",
         contents=[text]
     )
-
     return np.array(response.embeddings[0].values, dtype=np.float32)
 
-# ---------------- INIT ----------------
 def init_index_if_needed(vec):
     global index
 
@@ -52,7 +47,6 @@ def init_index_if_needed(vec):
         dim = len(vec)
         index = faiss.IndexFlatL2(dim)
 
-# ---------------- ADD ----------------
 def add_to_index(chunks):
     global texts, index
 
@@ -76,30 +70,19 @@ def add_to_index(chunks):
 
     save_index()
 
-# ---------------- SEARCH (FIXED SAFETY) ----------------
 def search(query, k=3):
     global index, texts
+
+    # 🔥 MUHIM FIX: HAR DOIM DISKDAN YUKLA
+    load_index()
 
     if index is None or len(texts) == 0:
         return []
 
-    try:
-        q_emb = get_embedding(query)
+    q_emb = get_embedding(query)
 
-        D, I = index.search(
-            np.array([q_emb], dtype=np.float32),
-            k
-        )
+    D, I = index.search(np.array([q_emb], dtype=np.float32), k)
 
-        results = []
-        for i in I[0]:
-            if 0 <= i < len(texts):
-                results.append(texts[i])
+    return [texts[i] for i in I[0] if 0 <= i < len(texts)]
 
-        return results
-
-    except:
-        return []
-
-# ---------------- LOAD ON START ----------------
 load_index()
