@@ -81,21 +81,22 @@ def login_page():
                     "password": password
                 })
 
-                if res and res.user:
+                # 🔥 DEBUG (MUHIM)
+                st.write(res)
+
+                if hasattr(res, "session") and res.session:
                     st.session_state.user = res.user
-                    st.session_state.auth_page = None
                     st.success("Login successful")
                     st.rerun()
                 else:
-                    st.error("Login failed")
+                    st.error("Login failed: no session returned")
 
             except Exception as e:
-                st.error("Login error")
+                st.error(f"Login error: {e}")
 
     if st.button("Go Register"):
         st.session_state.auth_page = "register"
         st.rerun()
-
 
 def register_page():
     st.title("📝 Register")
@@ -116,12 +117,16 @@ def register_page():
                         "password": password
                     })
 
-                    st.success("Account created! Check email confirmation.")
+                    st.success("Registered! Now login.")
                     st.session_state.auth_page = "login"
                     st.rerun()
 
                 except Exception as e:
-                    st.error("Register error")
+                    st.error(f"Register error: {e}")
+
+    if st.button("Back"):
+        st.session_state.auth_page = "login"
+        st.rerun()
 
     if st.button("Back"):
         st.session_state.auth_page = "login"
