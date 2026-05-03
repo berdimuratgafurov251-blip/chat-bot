@@ -203,9 +203,9 @@ if uploaded_file:
     from ingest import load_file
     count = load_file(text)
 
-    st.session_state.temp_file_context = text  
+    st.session_state.temp_file_context = text  # 🔥 MUHIM
 
-    st.success(f"File indexed ({count} chunks)")
+    st.success(f"Indexed: {count} chunks")
 
 # ================= HISTORY =================
 def load_history():
