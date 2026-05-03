@@ -199,11 +199,14 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file:
     path = save_uploaded_file(uploaded_file)
+
     with open(path, "rb") as f:
         load_file(f)
 
-    st.session_state.temp_file_context = None
-    st.success("File indexed ✅")
+    from vectorstore import texts
+
+    st.write("🔎 TEXTS COUNT:", len(texts))
+    st.write("🔎 SAMPLE:", texts[:2])
 
 # ================= HISTORY =================
 def load_history():
