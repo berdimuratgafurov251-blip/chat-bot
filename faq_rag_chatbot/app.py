@@ -7,10 +7,13 @@ import uuid
 import tempfile
 
 # ---------------- SUPABASE ----------------
-supabase = create_client(
-    st.secrets["SUPABASE_URL"],
-    st.secrets["SUPABASE_KEY"]
-)
+try:
+    supabase = create_client(
+        st.secrets["SUPABASE_URL"].strip(),
+        st.secrets["SUPABASE_KEY"].strip()
+    )
+except Exception as e:
+    st.error(f"Supabase init error: {e}")
 import requests
 
 st.write("SUPABASE TEST:", requests.get("https://hclcvgqnafyyzqtqyvae.supabase.co").status_code)
