@@ -204,11 +204,12 @@ if uploaded_file:
     count = load_file(text)
 
     st.session_state.temp_file_context = text
+    st.session_state.file_uploaded = True
+    st.session_state.file_name = uploaded_file.name
+    st.success("File uploaded")
+    st.rerun()
 
-    st.write("TEXT LENGTH:", len(text))
-    st.write("CHUNKS:", count)
-
-    st.success("Indexed")
+    
 
 # ================= HISTORY =================
 def load_history():
