@@ -206,10 +206,12 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file:
-    path = save_uploaded_file(uploaded_file)   
-    process_file(path)                         
+    path = save_uploaded_file(uploaded_file)
 
-    st.session_state.temp_file_context = None  
+    with open(path, "rb") as f:
+        load_file(f)
+
+    st.session_state.temp_file_context = None
     st.success("File indexed ✅")
 
 
