@@ -65,7 +65,7 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ================= AUTH (unchanged) =================
+# ================= AUTH =================
 def login_page():
     st.title("🔐 Login")
 
@@ -121,7 +121,7 @@ def register_page():
 is_logged_in = st.session_state.user is not None
 uid = st.session_state.user.id if is_logged_in else "guest"
 
-# ================= SIDEBAR (unchanged) =================
+# ================= 🔴 ORIGINAL SIDEBAR (RESTORED) =================
 st.sidebar.title("👤 Account")
 
 if not is_logged_in:
@@ -140,6 +140,7 @@ else:
         st.session_state.user = None
         st.rerun()
 
+# ROUTER
 if st.session_state.auth_page == "login":
     login_page()
     st.stop()
@@ -168,7 +169,7 @@ if uploaded_file:
     st.session_state.temp_file_context = None
     st.success("File indexed ✅")
 
-# ================= HISTORY (unchanged) =================
+# ================= HISTORY =================
 def load_history():
     return supabase.table("chat_history") \
         .select("*") \
@@ -177,7 +178,7 @@ def load_history():
         .order("created_at") \
         .execute().data
 
-# ================= DISPLAY (unchanged) =================
+# ================= DISPLAY =================
 if is_logged_in:
     history = load_history()
     for m in history:
@@ -197,21 +198,16 @@ def save(role, content):
         "content": content
     }).execute()
 
-# ================= 🔥 FIXED RAG SECTION =================
+# ================= 🔥 FIXED RAG =================
 query = st.chat_input("Savol yozing...")
 
 if query:
 
-    # file context safe get
     file_context = st.session_state.get("temp_file_context", "")
 
-    # 🔥 VECTOR SEARCH (FIXED)
     docs = search(query)
-
-    # 🔥 filter empty / noise reduction
     rag_context = "\n\n".join([d for d in docs[:3] if d]) if docs else ""
 
-    # 🔥 STRICT PROMPT (hallucination fix)
     prompt = f"""
 You are a strict FAQ assistant.
 
@@ -219,7 +215,6 @@ RULES:
 - Use ONLY FILE or FAQ context
 - If answer is not in context, say "I don't know"
 - Do NOT guess or invent information
-- Do NOT create new facts
 
 FILE:
 {(file_context or "")[:1500]}
