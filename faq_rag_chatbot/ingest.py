@@ -5,19 +5,30 @@ def load_file(file):
     filename = file.name.lower()
 
     text = ""
+    total_chunks = 0
 
-    # ---------------- TXT ----------------
     if filename.endswith(".txt"):
-        text = file.read().decode("utf-8")
 
+        buffer = ""
+
+        for line in file:
+            try:
+                buffer += line.decode("utf-8")
+            except:
+                continue
+
+            if len(buffer) > 3000:
+                chunks = split_text(buffer, chunk_size=300)
+                add_to_index(chunks)
+                total_chunks += len(chunks)
+                buffer = ""
+
+        if buffer:
+            chunks = split_text(buffer, chunk_size=300)
+            add_to_index(chunks)
+            total_chunks += len(chunks)
 
     else:
         return 0
 
-    # ---------------- CHUNK + INDEX ----------------
-    chunks = split_text(text, chunk_size=300)
-
-    for chunk in chunks:
-        add_to_index([chunk])
-
-    return len(chunks)
+    return total_chunks
