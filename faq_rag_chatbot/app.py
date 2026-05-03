@@ -80,10 +80,16 @@ def login_page():
                     "email": email,
                     "password": password
                 })
-                st.session_state.user = res.user
-                st.session_state.auth_page = None
-                st.rerun()
-            except:
+
+                if res and res.user:
+                    st.session_state.user = res.user
+                    st.session_state.auth_page = None
+                    st.success("Login successful")
+                    st.rerun()
+                else:
+                    st.error("Login failed")
+
+            except Exception as e:
                 st.error("Login error")
 
     if st.button("Go Register"):
@@ -105,13 +111,21 @@ def register_page():
                 st.error("Passwords mismatch")
             else:
                 try:
-                    supabase.auth.sign_up({
+                    res = supabase.auth.sign_up({
                         "email": email,
                         "password": password
                     })
-                    st.success("Please confirm your email address")
-                except:
-                    st.error("Error")
+
+                    st.success("Account created! Check email confirmation.")
+                    st.session_state.auth_page = "login"
+                    st.rerun()
+
+                except Exception as e:
+                    st.error("Register error")
+
+    if st.button("Back"):
+        st.session_state.auth_page = "login"
+        st.rerun()
 
     if st.button("Back"):
         st.session_state.auth_page = "login"
