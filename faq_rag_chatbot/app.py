@@ -14,9 +14,6 @@ try:
     )
 except Exception as e:
     st.error(f"Supabase init error: {e}")
-import requests
-
-st.write("SUPABASE TEST:", requests.get("https://hclcvgqnafyyzqtqyvae.supabase.co").status_code)
 # ---------------- GEMINI ----------------
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
