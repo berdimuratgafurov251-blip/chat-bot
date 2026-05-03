@@ -198,12 +198,14 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file:
-    text = uploaded_file.getvalue().decode("utf-8")
+    text = uploaded_file.getvalue().decode("utf-8", errors="ignore")
 
     from ingest import load_file
-    load_file(text)
+    count = load_file(text)
 
-    st.success("File indexed")
+    st.session_state.temp_file_context = text  
+
+    st.success(f"File indexed ({count} chunks)")
 
 # ================= HISTORY =================
 def load_history():
