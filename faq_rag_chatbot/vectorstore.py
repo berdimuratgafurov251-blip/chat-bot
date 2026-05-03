@@ -26,7 +26,8 @@ def load_index():
 
 # ---------------- SAVE ----------------
 def save_index():
-    faiss.write_index(index, INDEX_FILE)
+    if index is not None:
+        faiss.write_index(index, INDEX_FILE)
 
     with open(TEXT_FILE, "wb") as f:
         pickle.dump(texts, f)
@@ -38,23 +39,23 @@ def get_embedding(text):
         contents=[text]
     )
 
-    vec = np.array(response.embeddings[0].values, dtype=np.float32)
-    return vec
+    return np.array(response.embeddings[0].values, dtype=np.float32)
 
-# ---------------- INIT INDEX (SMART) ----------------
+# ---------------- INIT ----------------
 def init_index_if_needed(vec):
     global index
 
     if index is None:
         dim = len(vec)
         index = faiss.IndexFlatL2(dim)
-        print(f"🔥 FAISS initialized with dim = {dim}")
 
 # ---------------- ADD ----------------
 def add_to_index(chunks):
-    global texts
+    global texts, index
 
-   
+    if not chunks:
+        return
+
     response = client.models.embed_content(
         model="models/gemini-embedding-001",
         contents=chunks
@@ -65,7 +66,6 @@ def add_to_index(chunks):
         for e in response.embeddings
     ]
 
-    
     init_index_if_needed(embeddings[0])
 
     index.add(np.array(embeddings, dtype=np.float32))
@@ -82,7 +82,12 @@ def search(query, k=3):
 
     D, I = index.search(np.array([q_emb], dtype=np.float32), k)
 
-    return [texts[i] for i in I[0] if 0 <= i < len(texts)]
+    results = []
+    for i in I[0]:
+        if 0 <= i < len(texts):
+            results.append(texts[i])
+
+    return results
 
 # ---------------- LOAD ON START ----------------
 load_index()
