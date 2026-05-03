@@ -246,15 +246,16 @@ if query:
     file_context = st.session_state.get("temp_file_context", "")
 
     docs = search(query)
-    rag_context = "\n\n".join([d for d in docs[:3] if d]) if docs else ""
+    rag_context = "\n\n".join(docs[:3]) if docs else ""
 
     prompt = f"""
-You are a strict FAQ assistant.
+You are a helpful AI assistant.
 
-RULES:
-- Use ONLY FILE or FAQ context
-- If answer is not in context, say "I don't know"
-- Do NOT guess or invent information
+INSTRUCTIONS:
+- Use FILE and FAQ context if they are relevant
+- If context is empty or not useful, answer using your general knowledge
+- Do NOT say "I don't know" for greetings or simple questions
+- Be natural and helpful
 
 FILE:
 {(file_context or "")[:1500]}
