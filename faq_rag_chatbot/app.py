@@ -4,7 +4,7 @@ from ingest import load_file
 from vectorstore import search
 from supabase import create_client
 import uuid
-
+import tempfile
 # ---------------- SUPABASE ----------------
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
@@ -202,11 +202,18 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file:
-    load_file(uploaded_file)
-    docs = search(" ")
-    st.session_state.temp_file_context = "\n\n".join(docs)
-    st.success("File loaded")
+    path = save_uploaded_file(uploaded_file)   
+    process_file(path)                         
 
+    st.session_state.temp_file_context = None  
+    st.success("File indexed ✅")
+
+
+
+def save_uploaded_file(uploaded_file):
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(uploaded_file.getbuffer())
+        return tmp.name
 # ================= HISTORY =================
 def load_history():
     return supabase.table("chat_history") \
