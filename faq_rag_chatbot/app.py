@@ -159,11 +159,11 @@ else:
         supabase.auth.sign_out()
         st.session_state.user = None
         st.rerun()
-if st.session_state.auth_page == "login":
+if st.session_state.get("auth_page") == "login":
     login_page()
     st.stop()
 
-if st.session_state.auth_page == "register":
+elif st.session_state.get("auth_page") == "register":
     register_page()
     st.stop()
 # ---------------- CONTROL PANEL ----------------
