@@ -222,7 +222,7 @@ RULES:
 - Do NOT create new facts
 
 FILE:
-{file_context[:1500]}
+{(file_context or "")[:1500]}
 
 FAQ CONTEXT:
 {rag_context}
