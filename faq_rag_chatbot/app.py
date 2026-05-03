@@ -20,12 +20,38 @@ st.set_page_config(
     page_title="Smart FAQ Chatbot RAG",
     layout="centered"
 )
-models = client.models.list()
+import streamlit as st
+from google import genai
 
-st.title("Available Gemini Models")
+st.title("🔎 Gemini API Test Panel")
 
-for m in models:
-    st.write(m.name)
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+model = st.selectbox(
+    "Model tanla",
+    [
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.5-pro"
+    ]
+)
+
+text = st.text_input("Test prompt", "hello")
+
+if st.button("Run Test"):
+    try:
+        response = client.models.generate_content(
+            model=model,
+            contents=[text]
+        )
+
+        st.success("SUCCESS ✅")
+        st.write(response.text)
+
+    except Exception as e:
+        st.error("ERROR ❌")
+        st.exception(e)
 st.title("🤖 Smart FAQ Chatbot RAG")
 
 # ================= CSS =================
