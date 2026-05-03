@@ -20,7 +20,12 @@ st.set_page_config(
     page_title="Smart FAQ Chatbot RAG",
     layout="centered"
 )
+models = client.models.list()
 
+st.title("Available Gemini Models")
+
+for m in models:
+    st.write(m.name)
 st.title("🤖 Smart FAQ Chatbot RAG")
 
 # ================= CSS =================
