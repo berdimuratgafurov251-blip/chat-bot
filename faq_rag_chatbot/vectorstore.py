@@ -54,14 +54,22 @@ def init_index_if_needed(vec):
 def add_to_index(chunks):
     global texts
 
-    for chunk in chunks:
-        emb = get_embedding(chunk)
+   
+    response = client.models.embed_content(
+        model="models/gemini-embedding-001",
+        contents=chunks
+    )
 
-        # 🔥 dynamic init (FIX)
-        init_index_if_needed(emb)
+    embeddings = [
+        np.array(e.values, dtype=np.float32)
+        for e in response.embeddings
+    ]
 
-        index.add(np.array([emb], dtype=np.float32))
-        texts.append(chunk)
+    
+    init_index_if_needed(embeddings[0])
+
+    index.add(np.array(embeddings, dtype=np.float32))
+    texts.extend(chunks)
 
     save_index()
 
