@@ -81,24 +81,18 @@ def login_page():
                     "password": password
                 })
 
-                # 🔥 DEBUG (MUHIM)
-                st.write(res)
+                st.session_state.user = res.user
+                st.session_state.auth_page = None
 
-                if hasattr(res, "session") and res.session:
-                    st.session_state.user = res.user
-                    st.success("Login successful")
-                    st.rerun()
-                else:
-                    st.error("Login failed: no session returned")
+                st.success("Logged in successfully")
+                st.rerun()
 
             except Exception as e:
                 st.error(f"Login error: {e}")
-    st.write("SESSION:", getattr(res, "session", None))
-    st.write("USER:", getattr(res, "user", None))
+
     if st.button("Go Register"):
         st.session_state.auth_page = "register"
         st.rerun()
-
 def register_page():
     st.title("📝 Register")
 
@@ -111,32 +105,28 @@ def register_page():
         if submitted:
             if password != confirm:
                 st.error("Passwords mismatch")
-            else:
-                try:
-                    res = supabase.auth.sign_up({
-                        "email": email,
-                        "password": password
-                    })
+                return
 
-                    st.success("Registered! Now login.")
+            try:
+                res = supabase.auth.sign_up({
+                    "email": email,
+                    "password": password
+                })
+
+                # 🔥 SAFE HANDLING
+                if res and res.user:
+                    st.success("Account created. Check your email to confirm.")
                     st.session_state.auth_page = "login"
                     st.rerun()
+                else:
+                    st.error("Signup failed: no user returned")
 
-                except Exception as e:
-                    st.error(f"Register error: {e}")
-
-    if st.button("Back"):
-        st.session_state.auth_page = "login"
-        st.rerun()
+            except Exception as e:
+                st.error(f"Register error: {e}")
 
     if st.button("Back"):
         st.session_state.auth_page = "login"
         st.rerun()
-
-    if st.button("Back"):
-        st.session_state.auth_page = "login"
-        st.rerun()
-
 # ================= MODE =================
 is_logged_in = st.session_state.user is not None
 uid = st.session_state.user.id if is_logged_in else "guest"
