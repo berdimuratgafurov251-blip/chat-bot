@@ -5,6 +5,7 @@ from vectorstore import search
 from supabase import create_client
 import uuid
 import tempfile
+
 # ---------------- SUPABASE ----------------
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
@@ -20,7 +21,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# 🔥 TITLE FIX (ONLY ADDITION)
 st.title("🤖 Smart FAQ Chatbot RAG")
 
 # ================= CSS =================
@@ -65,7 +65,7 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ================= AUTH PAGES =================
+# ================= AUTH (unchanged) =================
 def login_page():
     st.title("🔐 Login")
 
@@ -121,7 +121,7 @@ def register_page():
 is_logged_in = st.session_state.user is not None
 uid = st.session_state.user.id if is_logged_in else "guest"
 
-# ================= SIDEBAR =================
+# ================= SIDEBAR (unchanged) =================
 st.sidebar.title("👤 Account")
 
 if not is_logged_in:
@@ -140,7 +140,6 @@ else:
         st.session_state.user = None
         st.rerun()
 
-# ---------------- ROUTER ----------------
 if st.session_state.auth_page == "login":
     login_page()
     st.stop()
@@ -149,56 +148,12 @@ if st.session_state.auth_page == "register":
     register_page()
     st.stop()
 
-# ================= CONTROL PANEL =================
-st.sidebar.markdown("---")
-st.sidebar.title("⚙️ Control Panel")
-
-if st.sidebar.button("➕ New Chat"):
-    st.session_state.chat_id = str(uuid.uuid4())
-    if not is_logged_in:
-        st.session_state.guest_chat = []
-    st.rerun()
-
-if st.sidebar.button("🧹 Clear Chat"):
-    if is_logged_in:
-        supabase.table("chat_history") \
-            .delete() \
-            .eq("user_id", uid) \
-            .eq("chat_id", st.session_state.chat_id) \
-            .execute()
-    else:
-        st.session_state.guest_chat = []
-    st.rerun()
-    
+# ================= FILE UPLOAD =================
 def save_uploaded_file(uploaded_file):
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(uploaded_file.getbuffer())
         return tmp.name
-# ================= CHAT LIST =================
-st.sidebar.markdown("---")
-st.sidebar.title("💬 Chats")
 
-if is_logged_in:
-    def load_chat_list():
-        res = supabase.table("chat_history") \
-            .select("chat_id, content, created_at") \
-            .eq("user_id", uid) \
-            .order("created_at", desc=True) \
-            .execute()
-
-        chats = {}
-        for r in res.data:
-            chats.setdefault(r["chat_id"], r["content"][:30])
-        return chats
-
-    for cid, title in load_chat_list().items():
-        if st.sidebar.button(title, key=cid):
-            st.session_state.chat_id = cid
-            st.rerun()
-else:
-    st.sidebar.info("Guest mode")
-
-# ================= FILE =================
 uploaded_file = st.file_uploader(
     "📎 Upload file",
     type=["txt"],
@@ -207,17 +162,13 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file:
     path = save_uploaded_file(uploaded_file)
-
     with open(path, "rb") as f:
         load_file(f)
 
     st.session_state.temp_file_context = None
     st.success("File indexed ✅")
 
-
-
-
-# ================= HISTORY =================
+# ================= HISTORY (unchanged) =================
 def load_history():
     return supabase.table("chat_history") \
         .select("*") \
@@ -226,7 +177,7 @@ def load_history():
         .order("created_at") \
         .execute().data
 
-# ================= DISPLAY =================
+# ================= DISPLAY (unchanged) =================
 if is_logged_in:
     history = load_history()
     for m in history:
@@ -246,28 +197,40 @@ def save(role, content):
         "content": content
     }).execute()
 
-# ================= CHAT =================
+# ================= 🔥 FIXED RAG SECTION =================
 query = st.chat_input("Savol yozing...")
 
 if query:
-    file_context = st.session_state.temp_file_context
-    st.session_state.temp_file_context = None
-    st.session_state.uploader_key += 1
 
+    # file context safe get
+    file_context = st.session_state.get("temp_file_context", "")
+
+    # 🔥 VECTOR SEARCH (FIXED)
     docs = search(query)
-    rag_context = "\n\n".join(docs[:3]) if docs else ""
 
+    # 🔥 filter empty / noise reduction
+    rag_context = "\n\n".join([d for d in docs[:3] if d]) if docs else ""
+
+    # 🔥 STRICT PROMPT (hallucination fix)
     prompt = f"""
-FILE:
-{(file_context or "")[:1500]}
+You are a strict FAQ assistant.
 
-FAQ:
+RULES:
+- Use ONLY FILE or FAQ context
+- If answer is not in context, say "I don't know"
+- Do NOT guess or invent information
+- Do NOT create new facts
+
+FILE:
+{file_context[:1500]}
+
+FAQ CONTEXT:
 {rag_context}
 
-Q:
+QUESTION:
 {query}
 
-A:
+ANSWER:
 """
 
     with st.spinner("Thinking..."):
