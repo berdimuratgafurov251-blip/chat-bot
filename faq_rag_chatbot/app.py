@@ -211,6 +211,9 @@ if uploaded_file:
     st.write("CHUNKS:", count)
     st.success("Indexed")
 
+st.write("TEXT LENGTH:", len(text))
+st.write("CHUNKS:", count)
+
 # ================= HISTORY =================
 def load_history():
     return supabase.table("chat_history") \
