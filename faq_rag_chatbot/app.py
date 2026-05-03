@@ -200,6 +200,7 @@ uploaded_file = st.file_uploader(
 if uploaded_file:
     text = uploaded_file.read().decode("utf-8", errors="ignore")
 
+    from ingest import load_file
     count = load_file(text)
 
     st.session_state.temp_file_context = text
