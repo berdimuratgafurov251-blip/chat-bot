@@ -278,7 +278,7 @@ ANSWER:
     with st.spinner("Thinking..."):
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=[prompt]
+            contents=[prompt[:6000]]
         )
 
     answer = response.text or "No response"
