@@ -22,7 +22,10 @@ def load_index():
             texts = pickle.load(f)
 
     if os.path.exists(INDEX_FILE):
-        index = faiss.read_index(INDEX_FILE)
+        try:
+            index = faiss.read_index(INDEX_FILE)
+        except:
+            index = None
 
 # ---------------- SAVE ----------------
 def save_index():
@@ -73,21 +76,30 @@ def add_to_index(chunks):
 
     save_index()
 
-# ---------------- SEARCH ----------------
+# ---------------- SEARCH (FIXED SAFETY) ----------------
 def search(query, k=3):
+    global index, texts
+
     if index is None or len(texts) == 0:
         return []
 
-    q_emb = get_embedding(query)
+    try:
+        q_emb = get_embedding(query)
 
-    D, I = index.search(np.array([q_emb], dtype=np.float32), k)
+        D, I = index.search(
+            np.array([q_emb], dtype=np.float32),
+            k
+        )
 
-    results = []
-    for i in I[0]:
-        if 0 <= i < len(texts):
-            results.append(texts[i])
+        results = []
+        for i in I[0]:
+            if 0 <= i < len(texts):
+                results.append(texts[i])
 
-    return results
+        return results
+
+    except:
+        return []
 
 # ---------------- LOAD ON START ----------------
 load_index()
