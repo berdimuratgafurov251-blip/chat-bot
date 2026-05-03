@@ -73,16 +73,24 @@ def add_to_index(chunks):
 def search(query, k=3):
     global index, texts
 
-    # 🔥 MUHIM FIX: HAR DOIM DISKDAN YUKLA
     load_index()
 
     if index is None or len(texts) == 0:
         return []
 
-    q_emb = get_embedding(query)
+    try:
+        q_emb = get_embedding(query)
 
-    D, I = index.search(np.array([q_emb], dtype=np.float32), k)
+        if q_emb is None or len(q_emb) == 0:
+            return []
 
-    return [texts[i] for i in I[0] if 0 <= i < len(texts)]
+        D, I = index.search(np.array([q_emb], dtype=np.float32), k)
 
-load_index()
+        return [
+            texts[i] for i in I[0]
+            if 0 <= i < len(texts)
+        ]
+
+    except Exception as e:
+        print("SEARCH ERROR:", e)
+        return []
