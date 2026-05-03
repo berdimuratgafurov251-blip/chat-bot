@@ -198,21 +198,16 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file:
-    try:
-        text = uploaded_file.read().decode("utf-8", errors="ignore")
-    except:
-        text = str(uploaded_file.read())
+    text = uploaded_file.read().decode("utf-8", errors="ignore")
 
-    from ingest import load_file
     count = load_file(text)
 
     st.session_state.temp_file_context = text
 
+    st.write("TEXT LENGTH:", len(text))
     st.write("CHUNKS:", count)
-    st.success("Indexed")
 
-st.write("TEXT LENGTH:", len(text))
-st.write("CHUNKS:", count)
+    st.success("Indexed")
 
 # ================= HISTORY =================
 def load_history():
